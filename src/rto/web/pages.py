@@ -27,6 +27,7 @@ from rto.services.reports import (
     month_ref_date,
     month_rows,
     months_with_results,
+    org_tree,
     team,
     to_cells,
 )
@@ -165,6 +166,17 @@ def reports_export(
 
 
 # --- requests ------------------------------------------------------------------------------------
+
+
+@router.get("/org")
+def org_chart(
+    request: Request, month: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db),
+):
+    m = parse_month(month, db)
+    roots = org_tree(db, p, m)
+    total = sum(1 + r.size for r in roots)
+    return render(request, "org.html", **nav_ctx(request, db, p), month=m, months=months_with_results(db),
+                  roots=roots, total=total)
 
 
 @router.get("/help")

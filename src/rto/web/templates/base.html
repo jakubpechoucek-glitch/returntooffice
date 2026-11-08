@@ -16,6 +16,7 @@
     <nav class="main">
       <a href="/" class="{{ 'active' if path == '/' }}">My dashboard</a>
       {% if is_manager or user.sees_everything %}<a href="/team" class="{{ 'active' if path.startswith('/team') }}">My team</a>{% endif %}
+      {% if is_manager or user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR', 'PEOPLE_PARTNER', 'EXECUTIVE') %}<a href="/org" class="{{ 'active' if path.startswith('/org') }}">Org chart</a>{% endif %}
       <a href="/reports" class="{{ 'active' if path.startswith('/reports') }}">Reports</a>
       <a href="/requests" class="{{ 'active' if path.startswith('/requests') }}">Requests {% if inbox_count %}<span class="badge">{{ inbox_count }}</span>{% endif %}</a>
       {% if user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR') %}<a href="/admin" class="{{ 'active' if path.startswith('/admin') }}">Admin</a>{% endif %}

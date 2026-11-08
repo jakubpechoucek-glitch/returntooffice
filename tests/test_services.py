@@ -238,3 +238,40 @@ def test_daily_import_rejects_bad_rows_atomically(db):
     bad = PRESENCE + b"999,2026-03-02,08:00,DOOR,IN,Spark\n"
     with pytest.raises(ServiceError, match="unknown employee_number"):
         import_daily(db, "presence", bad, "p.csv")
+
+
+# --- org chart ------------------------------------------------------------------------------------
+
+
+def _flatten(nodes):
+    for n in nodes:
+        yield n
+        yield from _flatten(n.children)
+
+
+def test_org_tree_scopes_and_counts(loaded):
+    from rto.services.reports import org_tree
+
+    db = loaded
+    # HR-like global view (People Partner is scoped to Collections group -> whole sample)
+    pp = P(db, db.scalar(select(Employee).where(Employee.email == "pp@example.com")))
+    roots = org_tree(db, pp, MAR)
+    assert [r.employee.email for r in roots] == ["marco.valdez@example.com"]  # Nina is outside the PP scope
+    marco = roots[0]
+    assert marco.size == 12
+    assert {n.employee.employee_number for n in _flatten(roots)} == {f"9000{i:02d}" for i in range(1, 14)}
+
+    # a team lead sees only her own subtree, rooted at herself
+    daphne_roots = org_tree(db, P(db, "900004"), MAR)
+    assert [r.employee.employee_number for r in daphne_roots] == ["900004"]
+    assert daphne_roots[0].size == 5 and daphne_roots[0].subtree.evaluated == 5
+
+    # an individual contributor sees just herself
+    assert [n.employee.employee_number for n in _flatten(org_tree(db, P(db, "900008"), MAR))] == ["900008"]
+
+    # the CEO-2 leader (not tracked) is the root for the global view
+    nina = db.scalar(select(Employee).where(Employee.email == "nina.cabrera@example.com"))
+    db.add(RoleAssignment(employee_id=nina.id, role=Role.HR_ADMIN))
+    db.flush()
+    top = org_tree(db, P(db, nina), MAR)
+    assert top[0].employee.id == nina.id and top[0].size == 13 and top[0].result is None

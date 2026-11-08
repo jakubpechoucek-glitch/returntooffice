@@ -228,6 +228,84 @@ def team(db: Session, p: Principal, month: dt.date, root_id: int) -> list[TeamNo
     return nodes
 
 
+# --- organisation tree ----------------------------------------------------------------------------
+
+
+@dataclass
+class OrgNode:
+    employee: Employee
+    result: MonthlyResult | None
+    unit_name: str
+    children: list[OrgNode] = field(default_factory=list)
+    subtree: Aggregate = field(default_factory=lambda: Aggregate("subtree", "subtree"))
+    size: int = 0  # number of people below (all levels)
+
+
+def org_tree(db: Session, p: Principal, month: dt.date) -> list[OrgNode]:
+    """Reporting-line tree as of ``month``, limited to the people the principal may see.
+
+    Roots are visible people whose manager is not visible (or who have no manager). Managers who are
+    not tracked themselves (e.g. ExCo members known only from the masterlist) appear as tree nodes.
+    """
+    month = first_of_month(month)
+    ref = month_ref_date(month)
+    vis = visible_employee_ids(db, p, ref)
+    assign = assignments_at(db, ref)
+    everyone = set(assign) | {a.manager_id for a in assign.values() if a.manager_id}
+    ids = everyone if vis is None else set(vis)
+    children: dict[int, list[int]] = defaultdict(list)
+    for eid in ids:
+        a = assign.get(eid)
+        if a and a.manager_id in ids and a.manager_id != eid:
+            children[a.manager_id].append(eid)
+    roots = [
+        eid for eid in ids
+        if not (assign.get(eid) and assign[eid].manager_id in ids)
+        # people outside the structure (e.g. HR staff with no placement and no reports) are not shown
+        and (eid in assign or children.get(eid))
+    ]
+
+    emps = {}
+    id_list = list(ids)
+    for i in range(0, len(id_list), 500):
+        for e in db.scalars(select(Employee).where(Employee.id.in_(id_list[i : i + 500]))):
+            emps[e.id] = e
+    results = {
+        r.employee_id: r
+        for r in db.scalars(select(MonthlyResult).where(MonthlyResult.month == month))
+        if r.employee_id in ids
+    }
+    units = _units(db)
+
+    def build(eid: int, seen: frozenset[int]) -> OrgNode | None:
+        e = emps.get(eid)
+        if e is None:
+            return None
+        a = assign.get(eid)
+        unit = units.get(a.org_unit_id).name if a and a.org_unit_id in units else ""
+        node = OrgNode(e, results.get(eid), unit)
+        for cid in children.get(eid, []):
+            if cid in seen:  # defensive: never loop on bad data
+                continue
+            child = build(cid, seen | {cid})
+            if child is None:
+                continue
+            node.children.append(child)
+            node.size += 1 + child.size
+            if child.result is not None:
+                node.subtree.add(child.result)
+            for k in ("headcount", "evaluated", "passed", "passed_initial", "met_weeks", "considered_weeks"):
+                setattr(node.subtree, k, getattr(node.subtree, k) + getattr(child.subtree, k))
+            node.subtree.total_valid += child.subtree.total_valid
+        # managers first, then alphabetical
+        node.children.sort(key=lambda n: (not n.children, n.employee.last_name, n.employee.first_name))
+        return node
+
+    out = [n for n in (build(r, frozenset({r})) for r in roots) if n is not None]
+    out.sort(key=lambda n: (-n.size, n.employee.last_name))
+    return out
+
+
 # --- employee detail ------------------------------------------------------------------------------
 
 

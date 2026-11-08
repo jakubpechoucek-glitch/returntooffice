@@ -28,6 +28,9 @@ request while it is pending. Never write medical details; the category "Medical"
 
 - **My team** shows your direct reports. For each manager below you, the *Organisation below* column shows how many
   people in their whole subtree met the month. Click it to go one level down; the breadcrumb takes you back.
+- **Org chart** shows the whole reporting line as a collapsible tree: each person's monthly result (hover for
+  weeks met and the department threshold) and, for every manager, how everyone below them did. Search by name,
+  position or department; HR can jump from any node to *edit* the person's manager or commitment.
 - You only see your own reporting line, as of the month you are viewing.
 - **Requests → Waiting for my decision**: approve, or reject with a comment. You can also file requests on behalf of
   your reports (the next-level manager then approves).

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "macros.html" import month_select %}
+{% block title %}Org chart{% endblock %}
+
+{% macro card(n) -%}
+  {%- set r = n.result -%}
+  <span class="org-card{{ ' untracked' if not n.employee.in_scope }}">
+    <a class="org-name" href="/employees/{{ n.employee.id }}?month={{ month.strftime('%Y-%m') }}">{{ n.employee.full_name }}</a>
+    <span class="org-meta">{{ n.employee.position or '' }}{% if n.unit_name %} · {{ n.unit_name }}{% endif %}</span>
+    {%- if r and r.considered_weeks %}
+      <span class="pill {{ 'ok' if r.adj_passed else 'bad' }}" title="{{ r.adj_met_weeks }}/{{ r.considered_weeks }} weeks met · commitment {{ r.commitment_days|num }} days · department threshold {{ r.threshold_pct|num }}%">{{ r.adj_adherence|pct }}</span>
+    {%- elif not n.employee.in_scope %}
+      <span class="pill neutral">not tracked</span>
+    {%- else %}
+      <span class="pill neutral">no data</span>
+    {%- endif %}
+    {%- if n.children %}
+      <span class="org-team" title="Everyone below this person">{{ n.size }} below · {{ n.subtree.passed }}/{{ n.subtree.evaluated }} met{% if n.subtree.pass_rate is not none %} ({{ n.subtree.pass_rate|pct }}){% endif %}</span>
+    {%- endif %}
+    {%- if user.can_manage_data %}<a class="org-edit small" href="/admin/people/{{ n.employee.id }}" title="Change manager, department or commitment">edit</a>{% endif %}
+  </span>
+{%- endmacro %}
+
+{% macro node(n, depth) -%}
+  <li class="org-node" data-name="{{ (n.employee.full_name ~ ' ' ~ (n.employee.position or '') ~ ' ' ~ n.unit_name)|lower }}">
+    {%- if n.children %}
+      <details{{ ' open' if depth < 2 }}>
+        <summary>{{ card(n) }}</summary>
+        <ul class="org-children">{% for c in n.children %}{{ node(c, depth + 1) }}{% endfor %}</ul>
+      </details>
+    {%- else %}
+      <div class="org-leaf">{{ card(n) }}</div>
+    {%- endif %}
+  </li>
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Org chart</h1>
+    <div class="muted">Reporting lines as of {{ month|month_label }} · {{ total }} people you can see · percentages are monthly adherence after disputes.</div>
+  </div>
+  <form method="get" class="toolbar">
+    <div><label>Month</label>{{ month_select(months, month) }}</div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <div class="grow"><label for="org-search">Find a person, position or department</label>
+      <input id="org-search" type="search" placeholder="e.g. Pascual, Team Lead, Fraud Risk" autocomplete="off"></div>
+    <button class="btn" type="button" data-org-action="expand">Expand all</button>
+    <button class="btn" type="button" data-org-action="collapse">Collapse all</button>
+  </div>
+  <p id="org-search-result" class="small muted mt"></p>
+
+  {% if roots %}
+  <ul class="org-tree">{% for r in roots %}{{ node(r, 0) }}{% endfor %}</ul>
+  {% else %}
+  <p class="muted">Nobody to show for {{ month|month_label }}.</p>
+  {% endif %}
+
+  <div class="legend mt">
+    <span><span class="pill ok">80%</span> month met</span>
+    <span><span class="pill bad">50%</span> month not met</span>
+    <span><span class="pill neutral">not tracked</span> shown for the hierarchy only</span>
+    <span><strong>“12 below · 9/11 met”</strong> = everyone under this manager, at all levels</span>
+  </div>
+  {% if user.can_manage_data %}<p class="small muted mt">To move a person, click <em>edit</em> and change their manager with an effective date, or upload a masterlist in Admin → Imports.</p>{% endif %}
+</div>
+{% endblock %}

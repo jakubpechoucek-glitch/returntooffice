@@ -24,4 +24,35 @@ document.addEventListener("DOMContentLoaded", () => {
     type.addEventListener("change", sync);
     sync();
   }
+
+  // Org chart: expand / collapse all, and search that opens the path to every match
+  document.querySelectorAll("[data-org-action]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const open = btn.getAttribute("data-org-action") === "expand";
+      document.querySelectorAll(".org-tree details").forEach((d) => { d.open = open; });
+    });
+  });
+  const search = document.querySelector("#org-search");
+  if (search) {
+    const result = document.querySelector("#org-search-result");
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      let hits = 0;
+      document.querySelectorAll(".org-node").forEach((li) => {
+        const match = q.length >= 2 && li.getAttribute("data-name").includes(q);
+        li.classList.toggle("match", match);
+        if (match) {
+          hits += 1;
+          let el = li.parentElement;
+          while (el && !el.classList.contains("org-tree")) {
+            if (el.tagName === "DETAILS") el.open = true;
+            el = el.parentElement;
+          }
+        }
+      });
+      result.textContent = q.length >= 2 ? `${hits} match(es)` : "";
+      const first = document.querySelector(".org-node.match");
+      if (first) first.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
 });
