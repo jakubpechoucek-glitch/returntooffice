@@ -40,4 +40,5 @@ databases:
     plan: basic-256mb
     region: singapore
     postgresMajorVersion: "16"
+    diskSizeGB: 1
     ipAllowList: []   # internal access from Render services only
