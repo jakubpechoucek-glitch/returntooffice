@@ -18,7 +18,7 @@ import sys
 
 from sqlalchemy import func, select
 
-from rto.config import get_settings
+from rto.config import get_settings, project_root
 from rto.db import session_scope
 
 
@@ -30,7 +30,7 @@ def cmd_migrate(_: argparse.Namespace) -> None:
     from alembic import command
     from alembic.config import Config
 
-    root = pathlib.Path(__file__).resolve().parents[2]
+    root = project_root()
     ini = root / "alembic.ini"
     cfg = Config(str(ini)) if ini.exists() else Config()
     cfg.set_main_option("script_location", str(root / "migrations"))

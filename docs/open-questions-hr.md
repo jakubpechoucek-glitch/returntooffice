@@ -13,7 +13,8 @@ Status legend: ⬜ open · ✅ answered
 ### Q1 ⬜ Starting thresholds
 The manual says monthly adherence "should be **100%**", but its examples treat **75%** as *Passed*. The annual rule says ≥ **75%** means good standing, but the consequence section mentions a **100%** annual threshold.
 Thresholds will be configurable **per department**. What should the company-wide defaults be?
-- *Proposed default:* monthly adherence pass = **100%**, annual compliance pass = **75%**
+- *Proposed default:* monthly adherence pass = **75%**, annual compliance pass = **75%**
+- *Evidence:* in the sample report (Jan/Mar 2026), "Met Commitment = Y" is given at 75% adherence, so 75% is what is applied today.
 - **HR answer:**
 
 ### Q2 ⬜ ExCo-1 commitment
@@ -156,4 +157,24 @@ Which 1–2 departments, and roughly how many people and org levels do they have
 
 ### Q29 ⬜ Collections
 - *Proposed default:* out of scope for the pilot. Later, Collections' final figures could be imported so the company report is complete.
+- **HR answer:**
+
+## F. Findings from the sample data
+
+### Q30 ⬜ "CEO 2" column
+The report has a "CEO 2" leader for each row. Is this the ExCo-1 head (CEO-2 level) of the reporting chain? Should that person automatically get an *Executive* view of their organisation?
+- *Proposed default:* imported as a person only (no automatic role); Executive roles are granted in Admin → Roles
+- **HR answer:**
+
+### Q31 ⬜ Disputes sheet values
+The `COLLATED_DISPUTES` sheet in the sample is empty. Please share a few masked example rows, so the TYPE / SUBTYPE / CATEGORY values can be mapped correctly. Example question: is TYPE "Exemption" vs "Dispute"?
+- **HR answer:**
+
+### Q32 ⬜ Months with five weeks in the legacy layout
+The legacy file has 4 weekly columns, but April, July and September 2026 have 5 considered weeks. How is the 5th week reported today?
+- *Proposed default:* not needed going forward, because the tool computes all weeks from daily data
+- **HR answer:**
+
+### Q33 ⬜ Real extract layouts
+For the next iteration, please share masked samples of the **raw** extracts (DACS door log, HC Connect leave/OB, timekeeping, Splunk Wi-Fi, DWH masterlist). The tool currently accepts canonical CSV layouts (`docs/data-import.md`); small adapters will map the real ones.
 - **HR answer:**

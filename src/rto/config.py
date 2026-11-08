@@ -5,6 +5,8 @@ All variables are prefixed with ``RTO_``. See ``docs/deployment.md`` for the ful
 
 from __future__ import annotations
 
+import os
+import pathlib
 from functools import lru_cache
 from typing import Literal
 
@@ -71,6 +73,18 @@ class Settings(BaseSettings):
     @property
     def oidc_metadata_url(self) -> str:
         return f"{self.oidc_authority}/{self.oidc_tenant_id}/v2.0/.well-known/openid-configuration"
+
+
+def project_root() -> pathlib.Path:
+    """Directory holding ``alembic.ini``, ``migrations/`` and ``sample_data/``.
+
+    Source checkout: the repository root. Container: the working directory (``/app``).
+    Override with ``RTO_HOME``.
+    """
+    if os.environ.get("RTO_HOME"):
+        return pathlib.Path(os.environ["RTO_HOME"])
+    repo = pathlib.Path(__file__).resolve().parents[2]
+    return repo if (repo / "migrations").is_dir() else pathlib.Path.cwd()
 
 
 @lru_cache

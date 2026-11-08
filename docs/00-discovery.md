@@ -129,12 +129,12 @@ Function Head submits by month-end, ExCo approves, and HR receives the list. Lat
 
 The goal is a prototype that IT can harden without rewriting it.
 
-- **Frontend:** React + TypeScript SPA.
+- **Frontend:** server-rendered pages (Jinja2) served by the same Python app, plus a JSON API for integrations. See ADR-0002. *(Changed from the initial React proposal: no Node toolchain, no CDN, strict CSP; a SPA can still be added on top of the API.)*
 - **Backend (Python, confirmed):** a stateless FastAPI REST API (OpenAPI-documented) plus a background worker for ingestion and compute jobs. The compute engine is a pure, unit-tested library so the policy rules are auditable.
 - **Database:** PostgreSQL, with Alembic migrations. Policy parameters (per-department thresholds, commitments, holiday calendars, excluded periods) live in data, not code, and carry effective dating.
 - **AuthN (Entra ID, confirmed):** OpenID Connect / OAuth 2.0 with Microsoft Entra ID. Local dev uses a mock OIDC provider (Keycloak).
 - **AuthZ:** RBAC plus data scoping by org hierarchy. This replaces Power BI RLS. The hierarchy is maintained in the admin UI.
-- **Infra (Kubernetes, confirmed):** Docker images, a Helm chart, horizontally scalable API pods, Redis for caching and job queue, structured logs, health/readiness probes and Prometheus metrics. Docker Compose is used for local dev. CI runs tests, lint and container builds.
+- **Infra (Kubernetes, confirmed):** Docker image, Helm chart (HPA, PDB, NetworkPolicy, migration Job, recompute CronJob), structured JSON logs, health/readiness probes and Prometheus metrics. Docker Compose for local dev. CI runs lint, tests on PostgreSQL, migration-drift check, image build and scan. A queue (Redis or Service Bus) is an optional hardening step, not part of the prototype.
 - **Audit:** an immutable audit log for every manual change: commitments, exemptions, dispute decisions, overrides.
 - **Data ingestion:** for the MVP, CSV/XLSX uploads of the same extracts HR uses today. Later, scheduled connectors to the DWH, DACS, HC Connect and Splunk.
 
@@ -161,3 +161,6 @@ The questions still open for HR are in [`open-questions-hr.md`](open-questions-h
 | 2026-11-08 | Scale: **thousands of employees, hundreds of managers**. Design target is 10,000 employees and 1,000 concurrent users. | Jakub |
 | 2026-11-08 | Open policy and process questions go to HR (`open-questions-hr.md`). Until they are answered, the documented defaults apply and stay configurable where possible. | Jakub |
 | 2026-11-08 | Implementation starts once the dummy data file arrives. The importer is built against its exact layout. | Jakub |
+| 2026-11-08 | Dummy data received (anonymized Monthly Onsite Report, Collections, Jan + Mar 2026). The importer reproduces all 26 rows exactly. Monthly pass threshold defaults to **75%**, because the data shows "Met Commitment = Y" at 75%. | Data |
+| 2026-11-08 | UI is server-rendered with a JSON API alongside (ADR-0002) | Claude / Jakub |
+| 2026-11-08 | Because the pilot excludes Collections, the demo adds a synthetic, 4-level "Risk Management" department with daily raw data | Claude |

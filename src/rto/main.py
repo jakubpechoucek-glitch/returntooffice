@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import pathlib
 import sys
 import time
@@ -20,7 +21,14 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Histogram,
+    generate_latest,
+    multiprocess,
+)
 from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -163,6 +171,11 @@ def create_app() -> FastAPI:
 
     @app.get("/metrics", include_in_schema=False)
     def metrics():
+        # With several gunicorn workers, PROMETHEUS_MULTIPROC_DIR aggregates all processes.
+        if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+            registry = CollectorRegistry()
+            multiprocess.MultiProcessCollector(registry)
+            return PlainTextResponse(generate_latest(registry).decode(), media_type=CONTENT_TYPE_LATEST)
         return PlainTextResponse(generate_latest().decode(), media_type=CONTENT_TYPE_LATEST)
 
     app.mount("/static", StaticFiles(directory=str(pathlib.Path(__file__).parent / "web" / "static")), name="static")

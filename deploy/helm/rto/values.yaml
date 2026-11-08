@@ -1,0 +1,78 @@
+# Default values. Override per environment (values-staging.yaml, values-production.yaml).
+image:
+  repository: registry.example.com/hr/rto
+  tag: ""            # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+replicaCount: 3
+webConcurrency: 4     # gunicorn workers per pod
+
+resources:
+  requests: {cpu: 250m, memory: 384Mi}
+  limits: {cpu: "1", memory: 768Mi}
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 12
+  targetCPUUtilizationPercentage: 65
+
+podDisruptionBudget:
+  minAvailable: 2
+
+# Non-secret configuration (rendered into a ConfigMap)
+config:
+  RTO_ENVIRONMENT: production
+  RTO_AUTH_MODE: oidc
+  RTO_BASE_URL: https://wos.example.com
+  RTO_SESSION_HTTPS_ONLY: "true"
+  RTO_LOG_LEVEL: INFO
+  RTO_DB_POOL_SIZE: "5"
+  RTO_DB_MAX_OVERFLOW: "10"
+  RTO_OIDC_TENANT_ID: "00000000-0000-0000-0000-000000000000"
+  RTO_OIDC_CLIENT_ID: "00000000-0000-0000-0000-000000000000"
+  RTO_API_AUDIENCE: "api://00000000-0000-0000-0000-000000000000"
+  RTO_APPROVAL_CHAIN: '["DIRECT_MANAGER","PEOPLE_PARTNER"]'
+
+# Secrets are NOT stored in this chart. Create the secret with your secret manager
+# (External Secrets Operator / Azure Key Vault CSI / sealed-secrets). Required keys:
+#   RTO_DATABASE_URL, RTO_SECRET_KEY, RTO_OIDC_CLIENT_SECRET
+existingSecret: rto-secrets
+
+ingress:
+  enabled: true
+  className: nginx
+  host: wos.example.com
+  tlsSecretName: wos-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 25m
+    # /metrics must not be reachable from outside the cluster
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location /metrics { deny all; return 404; }
+
+migrations:
+  enabled: true        # helm pre-install/pre-upgrade hook running `rto migrate`
+
+recomputeCronJob:
+  enabled: true
+  schedule: "17 1 * * *"   # nightly safety-net recompute of open months (UTC)
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: ingress-nginx
+  # CIDR of the managed PostgreSQL (egress); Entra ID egress on 443 is allowed separately
+  databaseCidr: 10.0.0.0/8
+
+serviceMonitor:
+  enabled: false       # Prometheus Operator
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: ["ALL"]}

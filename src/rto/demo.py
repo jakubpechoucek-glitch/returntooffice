@@ -19,6 +19,7 @@ import random
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from rto.config import project_root
 from rto.domain.calendar import iter_days
 from rto.importers.daily import import_daily
 from rto.importers.masterlist import import_masterlist
@@ -29,8 +30,7 @@ from rto.services.org import company
 from rto.services.policy import set_policy
 from rto.services.requests import create_request, decide
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
-SAMPLE_DIR = REPO / "sample_data"
+SAMPLE_DIR = project_root() / "sample_data"
 
 # Philippine holidays used by the demo. Verify against the official proclamation before production use;
 # HR maintains the real calendar in Admin -> Calendar.
