@@ -10,7 +10,7 @@ import pathlib
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -59,6 +59,19 @@ class Settings(BaseSettings):
     # --- uploads -------------------------------------------------------------------------------
     max_upload_mb: int = 25
 
+    # --- demo ----------------------------------------------------------------------------------
+    # Shared password protecting a publicly reachable demo (staging with dev sign-in).
+    demo_password: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def _psycopg_driver(cls, v: str) -> str:
+        # Managed services (Render, Heroku-style) hand out postgres:// or postgresql:// URLs.
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
+
     @model_validator(mode="after")
     def _guard_production(self) -> Settings:
         if self.environment == "production":
@@ -68,6 +81,8 @@ class Settings(BaseSettings):
                 raise ValueError("RTO_SECRET_KEY must be set in production")
             if not self.session_https_only:
                 raise ValueError("RTO_SESSION_HTTPS_ONLY must be true in production")
+        if self.environment == "staging" and self.auth_mode == "dev" and len(self.demo_password) < 8:
+            raise ValueError("A staging demo with dev sign-in requires RTO_DEMO_PASSWORD (8+ characters)")
         return self
 
     @property

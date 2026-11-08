@@ -37,12 +37,16 @@ def cmd_migrate(_: argparse.Namespace) -> None:
     command.upgrade(cfg, "head")
 
 
-def cmd_seed_demo(_: argparse.Namespace) -> None:
+def cmd_seed_demo(a: argparse.Namespace) -> None:
     if get_settings().environment == "production":
         sys.exit("seed-demo is not allowed in production")
     from rto.demo import seed_demo
+    from rto.models import Employee
 
     with session_scope() as db:
+        if a.if_empty and db.scalar(select(func.count()).select_from(Employee)):
+            print("database already has data; seed skipped")
+            return
         out = seed_demo(db)
     print(json.dumps({"employees": out["employees"], "reconciliation_issues": len(out["report"]["reconciliation"])}))
 
@@ -116,7 +120,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="rto")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("migrate").set_defaults(fn=cmd_migrate)
-    sub.add_parser("seed-demo").set_defaults(fn=cmd_seed_demo)
+    sd = sub.add_parser("seed-demo")
+    sd.add_argument("--if-empty", action="store_true", help="only seed an empty database")
+    sd.set_defaults(fn=cmd_seed_demo)
     g = sub.add_parser("generate-sample")
     g.add_argument("dir", nargs="?")
     g.set_defaults(fn=cmd_generate)

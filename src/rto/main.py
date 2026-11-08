@@ -119,6 +119,17 @@ def create_app() -> FastAPI:
             )
         return response
 
+    @app.middleware("http")
+    async def demo_gate(request: Request, call_next):
+        # Registered before SessionMiddleware, so it runs inside it and can read the session.
+        if s.demo_password and not request.url.path.startswith(
+            ("/demo-gate", "/static/", "/healthz", "/readyz")
+        ) and not request.session.get("demo_ok"):
+            if _is_api(request):
+                return JSONResponse({"detail": "Demo password required"}, status_code=401)
+            return RedirectResponse(f"/demo-gate?next={request.url.path}", status_code=303)
+        return await call_next(request)
+
     app.add_middleware(
         SessionMiddleware,
         secret_key=s.secret_key,

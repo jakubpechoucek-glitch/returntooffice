@@ -48,7 +48,10 @@ def _safe_next(nxt: str | None) -> str:
 
 
 def _start_session(request: Request, emp: Employee, idp_roles: list[str]) -> None:
+    demo_ok = request.session.get("demo_ok")
     request.session.clear()  # prevent session fixation
+    if demo_ok:
+        request.session["demo_ok"] = True
     request.session["uid"] = emp.id
     request.session["idp_roles"] = idp_roles
 
@@ -109,7 +112,10 @@ async def callback(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/logout", dependencies=[Depends(csrf_protect)])
 def logout(request: Request):
+    demo_ok = request.session.get("demo_ok")
     request.session.clear()
+    if demo_ok:
+        request.session["demo_ok"] = True
     s = get_settings()
     if s.auth_mode == "oidc":
         url = (
@@ -118,3 +124,24 @@ def logout(request: Request):
         )
         return RedirectResponse(url, status_code=303)
     return RedirectResponse("/login", status_code=303)
+
+
+# --- demo gate ------------------------------------------------------------------------------------
+
+
+@router.get("/demo-gate", response_class=HTMLResponse)
+def demo_gate(request: Request, next: str | None = None, error: str | None = None):
+    return render(request, "demo_gate.html", next=_safe_next(next), error=bool(error))
+
+
+@router.post("/demo-gate", dependencies=[Depends(csrf_protect)])
+async def demo_gate_submit(request: Request, password: str = Form(...), next: str = Form("/")):
+    import asyncio
+    import secrets
+
+    expected = get_settings().demo_password
+    if expected and secrets.compare_digest(password.encode(), expected.encode()):
+        request.session["demo_ok"] = True
+        return RedirectResponse(_safe_next(next), status_code=303)
+    await asyncio.sleep(1)  # slow down guessing
+    return RedirectResponse(f"/demo-gate?error=1&next={quote(_safe_next(next), safe='')}", status_code=303)

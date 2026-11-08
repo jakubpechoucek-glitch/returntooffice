@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Demo access{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <form method="post" action="/demo-gate" class="card">
+    <h1>WOS Tracker demo</h1>
+    <p class="muted">This is a demo with fictional data. Enter the demo password you received.</p>
+    {% if error %}<div class="flash error">Wrong password.</div>{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" name="password" required autofocus autocomplete="current-password">
+    <button class="btn primary mt" type="submit">Continue</button>
+  </form>
+</div>
+{% endblock %}

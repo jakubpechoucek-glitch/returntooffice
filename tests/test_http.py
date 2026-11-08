@@ -84,3 +84,43 @@ def test_security_headers(client):
     r = client.get("/login")
     assert "frame-ancestors 'none'" in r.headers["content-security-policy"]
     assert r.headers["x-frame-options"] == "DENY"
+
+
+def test_demo_gate(db, monkeypatch):
+    from rto.config import get_settings
+
+    monkeypatch.setenv("RTO_DEMO_PASSWORD", "open-sesame-42")
+    get_settings.cache_clear()
+    try:
+        from rto.main import create_app
+
+        c = TestClient(create_app())
+        r = c.get("/", follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"].startswith("/demo-gate")
+        assert c.get("/api/v1/me").status_code == 401
+        assert c.get("/healthz").status_code == 200
+        page = c.get("/demo-gate")
+        tok = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+        bad = c.post("/demo-gate", data={"csrf_token": tok, "password": "wrong", "next": "/"}, follow_redirects=False)
+        assert "error=1" in bad.headers["location"]
+        ok = c.post("/demo-gate", data={"csrf_token": tok, "password": "open-sesame-42", "next": "/"}, follow_redirects=False)
+        assert ok.headers["location"] == "/"
+        # past the gate: normal sign-in flow, and the gate stays open after sign-in
+        assert c.get("/", follow_redirects=False).headers["location"].startswith("/login")
+        assert c.get("/login").status_code == 200
+    finally:
+        get_settings.cache_clear()
+
+
+def test_render_style_database_url_is_normalised():
+    from rto.config import Settings
+
+    s = Settings(database_url="postgres://u:p@h:5432/db")
+    assert s.database_url == "postgresql+psycopg://u:p@h:5432/db"
+
+
+def test_staging_dev_auth_requires_demo_password():
+    from rto.config import Settings
+
+    with pytest.raises(ValueError):
+        Settings(environment="staging", auth_mode="dev", demo_password="")

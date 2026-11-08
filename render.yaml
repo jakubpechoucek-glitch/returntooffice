@@ -1,0 +1,43 @@
+# Render Blueprint for the public DEMO (fictional data only, password protected).
+# Not the production target: production runs on company infrastructure (see docs/deployment.md).
+services:
+  - type: web
+    name: wos-tracker-demo
+    runtime: python
+    plan: starter
+    region: singapore
+    branch: claude/laughing-ride-drbvso
+    buildCommand: pip install .
+    startCommand: >-
+      rto migrate && rto seed-demo --if-empty &&
+      gunicorn rto.main:app -k uvicorn_worker.UvicornWorker -w 2 -b 0.0.0.0:$PORT
+      --timeout 120 --forwarded-allow-ips='*'
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: RTO_ENVIRONMENT
+        value: staging
+      - key: RTO_AUTH_MODE
+        value: dev
+      - key: RTO_SESSION_HTTPS_ONLY
+        value: "true"
+      - key: RTO_SECRET_KEY
+        generateValue: true
+      - key: RTO_DEMO_PASSWORD
+        sync: false
+      - key: RTO_DB_POOL_SIZE
+        value: "3"
+      - key: RTO_DB_MAX_OVERFLOW
+        value: "2"
+      - key: RTO_DATABASE_URL
+        fromDatabase:
+          name: wos-tracker-demo-db
+          property: connectionString
+
+databases:
+  - name: wos-tracker-demo-db
+    plan: basic-256mb
+    region: singapore
+    postgresMajorVersion: "16"
+    ipAllowList: []   # internal access from Render services only
