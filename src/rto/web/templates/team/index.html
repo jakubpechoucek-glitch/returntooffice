@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "macros.html" import passed_pill, week_cell, month_select %}
+{% block title %}Team{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="breadcrumb">
+      {% for t in trail %}<a href="/team?root={{ t.id }}&month={{ month.strftime('%Y-%m') }}">{{ t.full_name }}</a> › {% endfor %}
+      {{ root.full_name }}
+    </div>
+    <h1>Team of {{ root.full_name }}</h1>
+    <div class="muted">Direct reports, with the aggregate of everyone below each manager. Reporting lines as of {{ month|month_label }}.</div>
+  </div>
+  <form method="get" class="toolbar">
+    {% if root.id != user.id %}<input type="hidden" name="root" value="{{ root.id }}">{% endif %}
+    <div><label>Month</label>{{ month_select(months, month) }}</div>
+  </form>
+</div>
+
+<div class="card table-wrap">
+  {% if nodes %}
+  <table>
+    <thead>
+      <tr>
+        <th>Employee</th><th>Position</th><th class="num">Commit.</th>
+        {% for m in week_mondays %}<th class="num nowrap">{{ m|week_label }}</th>{% endfor %}
+        <th class="num">Adherence</th><th>Month (after dispute)</th><th class="num">Organisation below</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for n in nodes %}
+      {% set row = rows.get(n.employee.id) %}
+      <tr>
+        <td><a href="/employees/{{ n.employee.id }}?month={{ month.strftime('%Y-%m') }}">{{ n.employee.full_name }}</a></td>
+        <td class="small">{{ n.employee.position or '' }}</td>
+        <td class="num">{{ (n.result.commitment_days if n.result else None)|num }}</td>
+        {% for m in week_mondays %}
+          <td class="num">{% if row %}{% for w in row.weeks if w.monday == m %}{{ week_cell(w) }}{% endfor %}{% endif %}</td>
+        {% endfor %}
+        <td class="num">{{ (n.result.adj_adherence if n.result else None)|pct }}</td>
+        <td>{{ passed_pill(n.result.adj_passed if n.result and n.result.considered_weeks else None) }}{% if not n.employee.in_scope %} <span class="pill neutral">not tracked</span>{% endif %}</td>
+        <td class="num">
+          {% if n.is_manager %}
+            <a href="/team?root={{ n.employee.id }}&month={{ month.strftime('%Y-%m') }}" title="Open this manager's team">
+              {{ n.subtree.passed }}/{{ n.subtree.evaluated }} met · {{ n.subtree.pass_rate|pct }} ›</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="small muted mt">Week cells show <strong>valid days / commitment</strong>. Green = met, red = not met, outlined = changed by an approved dispute, n/a = week not counted.</p>
+  {% else %}
+  <p class="muted">No direct reports in {{ month|month_label }}.</p>
+  {% endif %}
+</div>
+{% endblock %}

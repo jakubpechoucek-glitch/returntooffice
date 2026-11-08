@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Imports{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Imports</h1>
+  <div class="muted">Files are validated completely before anything is stored. Re-importing the same period replaces earlier data. Layouts: see <code>docs/data-import.md</code>.</div></div></div>
+
+{% if last %}
+<div class="card">
+  <h2>Result of the last import</h2>
+  <table>
+    {% for k, v in last.items() if k not in ('warnings', 'reconciliation') %}<tr><th>{{ k|replace('_',' ')|capitalize }}</th><td>{{ v|join(', ') if v is iterable and v is not string else v }}</td></tr>{% endfor %}
+  </table>
+  {% if last.reconciliation is defined %}
+    {% if last.reconciliation %}
+      <h3>Reconciliation differences vs. the file ({{ last.reconciliation|length }})</h3>
+      <ul class="small">{% for r in last.reconciliation[:50] %}<li>#{{ r.employee_number }} {{ r.month }}: {{ r.issues|join('; ') }}</li>{% endfor %}</ul>
+    {% else %}
+      <p><span class="pill ok">Reconciled</span> Computed adherence and “Met Commitment” match the file for all {{ last.reconciled_rows }} rows.</p>
+    {% endif %}
+  {% endif %}
+  {% if last.warnings %}<h3>Warnings</h3><ul class="small">{% for w in last.warnings[:50] %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endif %}
+
+<form method="post" action="/admin/imports" enctype="multipart/form-data" class="card">
+  <h2>Upload</h2>
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <div class="form-grid">
+    <div><label>Kind</label><select name="kind">{% for k, label in kinds.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></div>
+    <div><label>File</label><input type="file" name="file" accept=".xlsx,.csv" required></div>
+    <div><button class="btn primary" type="submit">Import</button></div>
+  </div>
+  <p class="small muted mt">Recommended order for a new period: masterlist → absences (leave/OB) → presence. Importing the legacy report reconciles its figures automatically.</p>
+</form>
+
+<div class="card table-wrap">
+  <h2>History</h2>
+  <table>
+    <thead><tr><th>#</th><th>When</th><th>Kind</th><th>File</th><th class="num">Rows</th><th>Status</th><th>Summary</th></tr></thead>
+    <tbody>
+    {% for b in batches %}
+      <tr><td>{{ b.id }}</td><td class="small nowrap">{{ b.created_at.strftime('%Y-%m-%d %H:%M') if b.created_at else '' }}</td><td class="small">{{ b.kind }}</td><td class="small">{{ b.filename }}</td>
+        <td class="num">{{ b.row_count }}</td><td><span class="pill {{ 'ok' if b.status == 'SUCCEEDED' else ('bad' if b.status == 'FAILED' else 'warn') }}">{{ b.status|replace('_',' ')|lower }}</span></td>
+        <td><details><summary class="small">show</summary><pre class="json">{{ b.summary|tojson(indent=1) }}</pre></details></td></tr>
+    {% else %}<tr><td colspan="7" class="muted">No imports yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

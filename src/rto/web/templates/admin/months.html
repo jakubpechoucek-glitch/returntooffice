@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_pill %}
+{% block title %}Report months{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Report months</h1>
+  <div class="muted">Open → Published (initial report released, review and dispute window) → Finalized (locked for ExCo).</div></div></div>
+<div class="card table-wrap">
+  <table>
+    <thead><tr><th>Month</th><th>Status</th><th>Published</th><th>Review until</th><th>Finalized</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for m in months %}
+      {% set key = m.month.strftime('%Y-%m') %}
+      <tr>
+        <td><a href="/reports?month={{ key }}">{{ m.month|month_label }}</a></td>
+        <td>{{ status_pill(m.status.value) }}</td>
+        <td class="small">{{ m.published_at.strftime('%Y-%m-%d') if m.published_at else '–' }}</td>
+        <td class="small">{{ m.review_deadline or '–' }}</td>
+        <td class="small">{{ m.finalized_at.strftime('%Y-%m-%d') if m.finalized_at else '–' }}</td>
+        <td>
+          {% if m.status.value != 'FINALIZED' %}
+          <form method="post" action="/admin/months/{{ key }}/recompute" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn small" type="submit">Recompute</button></form>
+          <form method="post" action="/admin/months/{{ key }}/publish" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn small" type="submit" data-confirm="Publish {{ m.month|month_label }} and open the review window?">Publish</button></form>
+          <form method="post" action="/admin/months/{{ key }}/finalize" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn small primary" type="submit" data-confirm="Finalize and lock {{ m.month|month_label }}?">Finalize</button></form>
+          {% elif user.is_hr_admin %}
+          <form method="post" action="/admin/months/{{ key }}/reopen" class="inline toolbar">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <input name="reason" placeholder="Reason for reopening" required maxlength="500">
+            <button class="btn small danger" type="submit">Reopen</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}<tr><td colspan="6" class="muted">No months with results yet. Import data first.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

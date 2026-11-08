@@ -1,0 +1,35 @@
+{% macro passed_pill(value, label_ok='Met', label_bad='Not met') -%}
+  {%- if value is none -%}<span class="pill neutral">No data</span>
+  {%- elif value -%}<span class="pill ok">{{ label_ok }}</span>
+  {%- else -%}<span class="pill bad">{{ label_bad }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro week_cell(w, adjusted=true) -%}
+  {%- set valid = w.adj_valid if adjusted else w.valid -%}
+  {%- set commit = w.adj_commitment if adjusted else w.commitment -%}
+  {%- set met = w.adj_met if adjusted else w.met -%}
+  {%- if not w.considered -%}
+    <span class="wk na" title="Not considered: {{ w.reason }}">n/a</span>
+  {%- elif valid is none -%}
+    <span class="wk na" title="No attendance data">?</span>
+  {%- else -%}
+    <span class="wk {{ 'met' if met else 'miss' }}{{ ' fixed' if adjusted and w.changed_by_dispute }}"
+          title="{{ valid|num }} valid day(s) vs commitment {{ commit|num }}">{{ valid|num }}/{{ commit|num }}</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro month_select(months, current, extra='') -%}
+  <select name="month" data-autosubmit>
+    {% for m in months %}<option value="{{ m.strftime('%Y-%m') }}" {{ 'selected' if m == current }}>{{ m|month_label }}</option>{% endfor %}
+    {% if current not in months %}<option value="{{ current.strftime('%Y-%m') }}" selected>{{ current|month_label }}</option>{% endif %}
+  </select>
+{%- endmacro %}
+
+{% macro status_pill(status) -%}
+  {%- set cls = {'APPROVED': 'ok', 'REJECTED': 'bad', 'PENDING': 'warn', 'WITHDRAWN': 'neutral', 'OPEN': 'neutral', 'PUBLISHED': 'warn', 'FINALIZED': 'ok'} -%}
+  <span class="pill {{ cls.get(status, 'neutral') }}">{{ status|capitalize }}</span>
+{%- endmacro %}
+
+{% macro csrf_field(csrf) -%}<input type="hidden" name="csrf_token" value="{{ csrf }}">{%- endmacro %}
+
+{% macro type_label(t) -%}{{ {'EXEMPTION': 'Exemption', 'DISPUTE': 'Dispute', 'COMMITMENT_CHANGE': 'Commitment change'}.get(t, t) }}{%- endmacro %}

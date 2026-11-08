@@ -36,6 +36,7 @@ from rto.models import (
     Employee,
     ImportBatch,
     MonthlyResult,
+    MonthStatus,
     OrgUnitKind,
     Request,
     RequestStatus,
@@ -46,7 +47,6 @@ from rto.models import (
 from rto.services import ServiceError
 from rto.services.audit import audit
 from rto.services.commitments import add_override, set_baseline
-from rto.models import MonthStatus
 from rto.services.compute import month_status, recompute_month
 from rto.services.org import change_assignment, company, get_or_create_location, get_or_create_unit
 from rto.services.requests import CATEGORIES, apply_effects

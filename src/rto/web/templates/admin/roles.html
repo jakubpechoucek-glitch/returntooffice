@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Roles{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Roles and access</h1>
+  <div class="muted">Employees and managers need no role: they see themselves and their reporting line automatically.
+  Roles can also be granted company-wide through Entra ID app roles.</div></div></div>
+<div class="grid cols-2">
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Person</th><th>Role</th><th>Scope</th><th></th></tr></thead>
+      <tbody>
+      {% for g in grants %}
+        <tr><td>{{ g.employee.full_name }}<div class="small muted">{{ g.employee.email }}</div></td><td><span class="pill neutral">{{ g.role.value }}</span></td>
+          <td class="small">{{ g.org_unit.name if g.org_unit else 'Company-wide' }}</td>
+          <td class="right"><form method="post" action="/admin/roles/{{ g.id }}/revoke" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <button class="btn small danger" type="submit" data-confirm="Revoke {{ g.role.value }} from {{ g.employee.full_name }}?">Revoke</button></form></td></tr>
+      {% else %}<tr><td colspan="4" class="muted">No roles granted.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="/admin/roles" class="card">
+    <h2>Grant a role</h2>
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div><label>E-mail</label><input type="email" name="email" required></div>
+      <div><label>Role</label><select name="role">{% for r in roles %}<option>{{ r }}</option>{% endfor %}</select></div>
+      <div><label>Scope (People Partner / Executive)</label><select name="org_unit_id"><option value="">Company-wide</option>{% for u in units %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <button class="btn primary mt" type="submit">Grant</button>
+    <ul class="small muted mt">
+      <li><strong>HR_ADMIN</strong>: policy, roles, hierarchy, calendar; can act on any approval step.</li>
+      <li><strong>HR_ANALYTICS</strong>: all data, imports, recompute, publish and finalize months.</li>
+      <li><strong>PEOPLE_PARTNER</strong>: sees the scope; reviews requests (final approval step).</li>
+      <li><strong>EXECUTIVE</strong>: read-only view of the scope.</li>
+      <li><strong>AUDITOR</strong>: read-only, everything including the audit log.</li>
+    </ul>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% from "macros.html" import passed_pill, week_cell, status_pill, type_label %}
+{% block title %}{{ ey.employee.full_name }}{% endblock %}
+{% block content %}
+{% set e = ey.employee %}
+<div class="page-head">
+  <div>
+    <div class="breadcrumb">{% for c in chain|reverse %}{{ c.full_name }} › {% endfor %}</div>
+    <h1>{{ e.full_name }}</h1>
+    <div class="muted">{{ e.position or '' }} · #{{ e.employee_number }} · {{ e.email }}
+      {% if ey.assignment %}· {{ ey.assignment.org_unit.name if ey.assignment.org_unit else '' }}{% if ey.assignment.location %} · {{ ey.assignment.location.name }}{% endif %}{% endif %}</div>
+  </div>
+  <div class="toolbar">
+    {% if can_file %}
+    <a class="btn" href="/requests/new?type=EXEMPTION&employee={{ e.id }}">File exemption</a>
+    <a class="btn" href="/requests/new?type=DISPUTE&employee={{ e.id }}">Raise dispute</a>
+    <a class="btn" href="/requests/new?type=COMMITMENT_CHANGE&employee={{ e.id }}">Change commitment</a>
+    {% endif %}
+    {% if user.can_manage_data %}<a class="btn" href="/admin/people/{{ e.id }}">Admin</a>{% endif %}
+  </div>
+</div>
+
+<div class="grid cols-4">
+  <div class="card kpi"><div class="label">Annual compliance {{ month.year }}</div><div class="value">{{ ey.annual_rate|pct }}</div>
+    <div class="small muted">{% if ey.evaluated_months < 12 and not ey.annual_passed %}<span class="pill neutral">Year in progress</span> adhering months / 12, good standing at {{ ey.annual_threshold|num }}%{% else %}{{ passed_pill(ey.annual_passed, 'Good standing', 'Below ' ~ (ey.annual_threshold|num) ~ '%') }}{% endif %}</div></div>
+  <div class="card kpi"><div class="label">Year to date</div><div class="value">{{ ey.ytd_rate|pct }}</div>
+    <div class="small muted">{{ ey.adhering_months }}/{{ ey.evaluated_months }} months adhering</div></div>
+  <div class="card kpi"><div class="label">Monthly threshold</div><div class="value">{{ ey.monthly_threshold|num }}%</div>
+    <div class="small muted">from {{ ey.threshold_origin.monthly_pass_pct }}</div></div>
+  <div class="card kpi"><div class="label">Weekly commitment</div><div class="value">{{ (ey.months[-1].commitment_days if ey.months else None)|num }} days</div>
+    <div class="small muted">current baseline; exemptions apply per week</div></div>
+</div>
+
+<div class="card">
+  <h2>Months</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Month</th><th class="num">Commitment</th><th class="num">Weeks met</th><th class="num">Adherence</th><th>Initial</th><th class="num">After dispute</th><th>Final</th><th class="num">Threshold</th></tr></thead>
+    <tbody>
+    {% for m in ey.months %}
+      <tr>
+        <td><a href="?month={{ m.month.strftime('%Y-%m') }}">{{ m.month|month_label }}</a>{% if m.month == month %} ◂{% endif %}</td>
+        <td class="num">{{ m.commitment_days|num }}</td>
+        <td class="num">{{ m.met_weeks }}/{{ m.considered_weeks }}</td>
+        <td class="num">{{ m.adherence|pct }}</td>
+        <td>{{ passed_pill(m.passed if m.considered_weeks else None) }}</td>
+        <td class="num">{{ m.adj_adherence|pct }}</td>
+        <td>{{ passed_pill(m.adj_passed if m.considered_weeks else None) }}</td>
+        <td class="num">{{ m.threshold_pct|num }}%</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="muted">No results yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>{{ month|month_label }} · week by week</h2>
+  {% if weeks %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Week</th><th>Days (Mon–Sun)</th><th class="num">Valid</th><th class="num">Commit.</th><th>Initial</th><th>After dispute</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for w in weeks %}
+      <tr>
+        <td class="nowrap">{{ w.monday|week_label }}</td>
+        <td>
+          {% if days %}
+          <div class="days">
+          {% for d, rec in days|dictsort if d >= w.monday and (d - w.monday).days < 7 %}
+            <span class="day {{ rec.status.value }}{{ ' flag' if rec.flags }}" title="{{ d.strftime('%a %d %b') }}: {{ rec.status.value|replace('_',' ')|lower }}{% if rec.valid_value and rec.valid_value < 1 %} ({{ rec.valid_value }}){% endif %}{% if rec.flags %} · {{ rec.flags|join(', ') }}{% endif %}{% if rec.sources %} · sources: {{ rec.sources }}{% endif %}">{{ d.strftime('%a')[0] }}</span>
+          {% endfor %}
+          </div>
+          {% else %}<span class="small muted">weekly totals only</span>{% endif %}
+        </td>
+        <td class="num">{{ w.valid|num }}</td>
+        <td class="num">{{ w.commitment|num }}</td>
+        <td>{% if w.considered %}{{ passed_pill(w.met) }}{% else %}<span class="pill neutral">Not counted</span>{% endif %}</td>
+        <td>{{ week_cell(w) }}</td>
+        <td class="small muted">{{ w.reason or '' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if days %}
+  <div class="legend mt">
+    <span><span class="day ONSITE">M</span> Onsite</span><span><span class="day LEAVE">M</span> Approved leave</span>
+    <span><span class="day OB">M</span> Official business</span><span><span class="day HOLIDAY">M</span> Holiday / excluded</span>
+    <span><span class="day NOT_ONSITE">M</span> Not onsite</span><span><span class="day ONSITE flag">M</span> Flagged for review (hover for details)</span>
+  </div>
+  {% endif %}
+  {% else %}<p class="muted">No weekly results for {{ month|month_label }}.</p>{% endif %}
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2>Commitment history</h2>
+    <table>
+      <thead><tr><th>Type</th><th class="num">Days/week</th><th>From</th><th>Until</th><th>Category</th></tr></thead>
+      <tbody>
+      {% for c in ey.commitments %}
+        <tr><td>{{ c.kind.value|capitalize }}</td><td class="num">{{ c.days_per_week|num }}</td><td>{{ c.valid_from }}</td>
+          <td>{{ c.valid_to or 'open' }}</td><td class="small">{{ c.category or '' }}{% if c.request_id %} <a href="/requests/{{ c.request_id }}">#{{ c.request_id }}</a>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">Default commitment applies.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Requests</h2>
+    <table>
+      <thead><tr><th>#</th><th>Type</th><th>Period</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in requests %}
+        <tr><td><a href="/requests/{{ r.id }}">#{{ r.id }}</a></td><td>{{ type_label(r.type.value) }}</td>
+          <td class="small">{{ r.start_date }}{% if r.end_date != r.start_date %} – {{ r.end_date }}{% endif %}</td><td>{{ status_pill(r.status.value) }}</td></tr>
+      {% else %}<tr><td colspan="4" class="muted">None.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

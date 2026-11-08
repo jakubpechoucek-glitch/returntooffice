@@ -1,0 +1,29 @@
+employee_number,email,first_name,last_name,position,people_level,ceo_level,department_group,department,manager_email,location,hired_date,termination_date,status,committed_days,effective_from
+910001,andrea.agustin@example.com,Andrea,Agustin,Chief Risk Officer,People Manager,CEO-2,Risk Management,Risk Office,paolo.reyes@example.com,Three NEO,2011-03-15,,Active,4,2026-01-05
+910002,benjo.herrera@example.com,Benjo,Herrera,Credit Risk Head,People Manager,CEO-3,Risk Management,Credit Risk,andrea.agustin@example.com,Three NEO,2012-04-15,,Active,3,2026-01-05
+910003,camille.pascual@example.com,Camille,Pascual,Credit Risk Team Lead 1,People Manager,CEO-4,Risk Management,Credit Risk,benjo.herrera@example.com,Three NEO,2013-05-15,,Active,3,2026-01-05
+910004,dennis.yap@example.com,Dennis,Yap,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,camille.pascual@example.com,Spark,2014-06-15,,Active,3,2026-01-05
+910005,elaine.fajardo@example.com,Elaine,Fajardo,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,camille.pascual@example.com,Three NEO,2015-07-15,,Active,3,2026-01-05
+910006,francis.flores@example.com,Francis,Flores,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,camille.pascual@example.com,Three NEO,2016-08-15,,Active,3,2026-01-05
+910007,grace.navarro@example.com,Grace,Navarro,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,camille.pascual@example.com,Spark,2017-09-15,,Active,3,2026-01-05
+910008,hector.uy@example.com,Hector,Uy,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,camille.pascual@example.com,Three NEO,2018-01-15,,Active,3,2026-01-05
+910009,isabel.domingo@example.com,Isabel,Domingo,Credit Risk Team Lead 2,People Manager,CEO-4,Risk Management,Credit Risk,benjo.herrera@example.com,Three NEO,2019-02-15,,Active,3,2026-01-05
+910010,jerome.dizon@example.com,Jerome,Dizon,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,isabel.domingo@example.com,Spark,2020-03-15,,Active,3,2026-01-05
+910011,katrina.lopez@example.com,Katrina,Lopez,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,isabel.domingo@example.com,Three NEO,2021-04-15,,Active,3,2026-01-05
+910012,leo.salazar@example.com,Leo,Salazar,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,isabel.domingo@example.com,Three NEO,2022-05-15,,Active,3,2026-01-05
+910013,mika.bautista@example.com,Mika,Bautista,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,isabel.domingo@example.com,Spark,2023-06-15,,Active,3,2026-01-05
+910014,noel.bernal@example.com,Noel,Bernal,Credit Risk Analyst,Individual Contributor,CEO-5,Risk Management,Credit Risk,isabel.domingo@example.com,Three NEO,2010-07-15,,Active,2,2026-01-05
+910015,olivia.ignacio@example.com,Olivia,Ignacio,Fraud Risk Head,People Manager,CEO-3,Risk Management,Fraud Risk,andrea.agustin@example.com,Ore Central,2011-08-15,,Active,3,2026-01-05
+910016,paulo.quiambao@example.com,Paulo,Quiambao,Fraud Risk Team Lead 1,People Manager,CEO-4,Risk Management,Fraud Risk,olivia.ignacio@example.com,Ore Central,2012-09-15,,Active,3,2026-01-05
+910017,queenie.zamora@example.com,Queenie,Zamora,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,paulo.quiambao@example.com,Spark,2013-01-15,,Active,3,2026-01-05
+910018,rafael.gomez@example.com,Rafael,Gomez,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,paulo.quiambao@example.com,Ore Central,2014-02-15,,Active,3,2026-01-05
+910019,sofia.garcia@example.com,Sofia,Garcia,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,paulo.quiambao@example.com,Ore Central,2015-03-15,,Active,3,2026-01-05
+910020,tristan.ocampo@example.com,Tristan,Ocampo,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,paulo.quiambao@example.com,Spark,2016-04-15,,Active,3,2026-01-05
+910021,ursula.velasco@example.com,Ursula,Velasco,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,paulo.quiambao@example.com,Ore Central,2017-05-15,,Active,3,2026-01-05
+910022,vince.enriquez@example.com,Vince,Enriquez,Fraud Risk Team Lead 2,People Manager,CEO-4,Risk Management,Fraud Risk,olivia.ignacio@example.com,Ore Central,2018-06-15,,Active,3,2026-01-05
+910023,wendy.estrada@example.com,Wendy,Estrada,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,vince.enriquez@example.com,Spark,2019-07-15,,Active,3,2026-01-05
+910024,xavier.morales@example.com,Xavier,Morales,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,vince.enriquez@example.com,Ore Central,2020-08-15,,Active,3,2026-01-05
+910025,yvonne.tan@example.com,Yvonne,Tan,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,vince.enriquez@example.com,Ore Central,2021-09-15,,Active,3,2026-01-05
+910026,zoren.castro@example.com,Zoren,Castro,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,vince.enriquez@example.com,Spark,2022-01-15,,Active,3,2026-01-05
+910027,alma.cruz@example.com,Alma,Cruz,Fraud Risk Analyst,Individual Contributor,CEO-5,Risk Management,Fraud Risk,vince.enriquez@example.com,Ore Central,2026-02-09,,Active,2,2026-01-05
+800001,paolo.reyes@example.com,Paolo,Reyes,Chief Operating Officer,People Manager,CEO-1,Risk Management,Risk Office,,Three NEO,2012-05-01,,Active,5,2026-01-05

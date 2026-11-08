@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Thresholds{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <div class="breadcrumb"><a href="/admin">Admin</a> ›</div>
+  <h1>Compliance thresholds per department</h1>
+  <div class="muted">Each value is inherited from the parent unit unless overridden. Effective values as of {{ today }}.</div>
+</div></div>
+
+<div class="card table-wrap">
+  <table>
+    <thead><tr><th>Organisation unit</th><th class="num">Monthly pass %</th><th class="num">Annual pass %</th><th class="num">Min. working days / week</th><th class="num">Default commitment</th><th>Inherited from</th></tr></thead>
+    <tbody>
+    {% for depth, u in ordered %}
+      {% set e = effective[u.id] %}
+      <tr>
+        <td class="indent-{{ depth if depth < 4 else 3 }}">{{ u.name }} <span class="small muted">{{ u.kind.value|replace('_',' ')|lower }}</span></td>
+        <td class="num">{{ e.monthly_pass_pct|num }}%</td>
+        <td class="num">{{ e.annual_pass_pct|num }}%</td>
+        <td class="num">{{ e.min_working_days }}</td>
+        <td class="num">{{ e.default_commitment_days|num }}</td>
+        <td class="small muted">{% set o = e.origin.values()|unique|list %}{{ o|join(', ') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if user.is_hr_admin %}
+<form method="post" action="/admin/thresholds" class="card">
+  <h2>Set or change thresholds</h2>
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <div class="form-grid">
+    <div><label>Organisation unit</label>
+      <select name="org_unit_id"><option value="">Company default (all units)</option>
+        {% for depth, u in ordered %}<option value="{{ u.id }}">{{ '— ' * depth }}{{ u.name }}</option>{% endfor %}</select></div>
+    <div><label>Effective from</label><input type="date" name="effective_from" value="{{ today.replace(day=1) }}" required></div>
+    <div><label>Monthly pass %</label><input type="number" name="monthly_pass_pct" min="0" max="100" step="1" placeholder="inherit"></div>
+    <div><label>Annual pass %</label><input type="number" name="annual_pass_pct" min="0" max="100" step="1" placeholder="inherit"></div>
+    <div><label>Min. working days / week</label><input type="number" name="min_working_days" min="1" max="5" placeholder="inherit"></div>
+    <div><label>Default commitment (days)</label><input type="number" name="default_commitment_days" min="0" max="5" step="0.5" placeholder="inherit"></div>
+  </div>
+  <div class="mt"><label>Note</label><input name="note" maxlength="500" placeholder="Reason / reference to the HR Committee decision"></div>
+  <div class="toolbar mt">
+    <label class="nowrap"><input type="checkbox" name="recompute" value="true" checked> Recompute affected open months</label>
+    <button class="btn primary" type="submit">Save</button>
+  </div>
+  <p class="small muted">Leave a field empty to inherit it. Finalized months are never changed; reopen them first if needed.</p>
+</form>
+{% endif %}
+
+<div class="card table-wrap">
+  <h2>Configured settings (history)</h2>
+  <table>
+    <thead><tr><th>Unit</th><th>Effective from</th><th class="num">Monthly %</th><th class="num">Annual %</th><th class="num">Min. days</th><th class="num">Default commit.</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for s in settings %}
+      <tr><td>{{ units[s.org_unit_id].name if s.org_unit_id else 'Company default' }}</td><td>{{ s.effective_from }}</td>
+        <td class="num">{{ s.monthly_pass_pct|num }}</td><td class="num">{{ s.annual_pass_pct|num }}</td><td class="num">{{ s.min_working_days|num }}</td>
+        <td class="num">{{ s.default_commitment_days|num }}</td><td class="small">{{ s.note or '' }}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">Nothing configured: built-in defaults apply.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

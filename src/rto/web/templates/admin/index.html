@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Administration{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Administration</h1><div class="muted">Configuration and data operations for HR. Every change is recorded in the audit log.</div></div></div>
+<div class="grid cols-4">
+  <div class="card kpi"><div class="label">Tracked employees</div><div class="value">{{ counts.employees }}</div></div>
+  <div class="card kpi"><div class="label">Organisation units</div><div class="value">{{ counts.units }}</div></div>
+  <div class="card kpi"><div class="label">Imports</div><div class="value">{{ counts.imports }}</div></div>
+  <div class="card kpi"><div class="label">Audit entries</div><div class="value">{{ counts.audit }}</div></div>
+</div>
+<div class="grid cols-2">
+  <div class="card">
+    <h2>Policy</h2>
+    <p><a href="/admin/thresholds">Thresholds per department</a><br><span class="small muted">Monthly / annual pass %, minimum working days per counted week, default commitment. Inherited department → group → company.</span></p>
+    <p><a href="/admin/calendar">Holidays and excluded periods</a><br><span class="small muted">Holiday calendar per office, one-off waivers (typhoon, management decisions).</span></p>
+  </div>
+  {% if user.can_manage_data %}
+  <div class="card">
+    <h2>People and organisation</h2>
+    <p><a href="/admin/people">People, managers and reporting lines</a><br><span class="small muted">Effective-dated changes of manager, department, office and commitment.</span></p>
+    <p><a href="/admin/org">Organisation units</a><br><span class="small muted">Department groups and departments.</span></p>
+    {% if user.is_hr_admin %}<p><a href="/admin/roles">Roles and access</a><br><span class="small muted">HR Admin, HR Analytics, People Partners (scoped), Executives (scoped), Auditors.</span></p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Data operations</h2>
+    <p><a href="/admin/imports">Imports</a><br><span class="small muted">Legacy onsite report, masterlist, door/timekeeping/Wi-Fi presence, leave and OB.</span></p>
+    <p><a href="/admin/months">Report months</a><br><span class="small muted">Recompute, publish (opens the review window), finalize (locks the month).</span></p>
+  </div>
+  {% endif %}
+  {% if user.has('HR_ADMIN', 'AUDITOR') %}
+  <div class="card"><h2>Audit</h2><p><a href="/admin/audit">Audit log</a><br><span class="small muted">Who changed what and when.</span></p></div>
+  {% endif %}
+</div>
+{% endblock %}

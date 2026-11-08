@@ -156,9 +156,8 @@ def create_request(
 
     if category not in CATEGORIES:
         raise ServiceError("Unknown category")
-    if rtype in (RequestType.EXEMPTION, RequestType.COMMITMENT_CHANGE):
-        if days_per_week is None:
-            raise ServiceError("Days per week is required")
+    if rtype in (RequestType.EXEMPTION, RequestType.COMMITMENT_CHANGE) and days_per_week is None:
+        raise ServiceError("Days per week is required")
     if rtype == RequestType.DISPUTE and not credited and days_per_week is None:
         raise ServiceError("A dispute must credit at least one day or correct the commitment")
     if days_per_week is not None and not (0 <= days_per_week <= 5):
@@ -197,6 +196,7 @@ def create_request(
         _finalise(db, req, actor.employee, approved=True, note="No approval steps configured")
     else:
         _notify_current(db, req)
+    db.flush()
     return req
 
 
@@ -246,6 +246,7 @@ def decide(db: Session, actor: Principal, request_id: int, approve: bool, commen
     )
     if not approve:
         _finalise(db, req, actor.employee, approved=False)
+        db.flush()
         return req
     if _activate_next(req) is None:
         _finalise(db, req, actor.employee, approved=True)
@@ -267,6 +268,7 @@ def withdraw(db: Session, actor: Principal, request_id: int) -> Request:
         if s.decision in (StepDecision.PENDING, StepDecision.WAITING):
             s.decision = StepDecision.SKIPPED
     audit(db, actor.employee, "request.withdraw", "request", req.id)
+    db.flush()
     return req
 
 

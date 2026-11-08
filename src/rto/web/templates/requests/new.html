@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}New request{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>New request</h1>
+  <div class="muted">Your request is routed to the approvers automatically. Once approved, the compliance figures are recalculated.</div></div></div>
+
+<form method="post" action="/requests" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <div class="form-grid">
+    <div>
+      <label for="employee">Employee</label>
+      <select id="employee" name="employee_id">
+        {% for p in people %}<option value="{{ p.id }}" {{ 'selected' if p.id == selected }}>{{ p.full_name }}{% if p.id == user.id %} (me){% endif %}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="request-type">Type</label>
+      <select id="request-type" name="type">
+        <option value="EXEMPTION" {{ 'selected' if rtype == 'EXEMPTION' }} data-hint="Reduced onsite commitment for specific weeks (e.g. medical, family reasons). Filed per week, not per month.">Exemption (specific weeks)</option>
+        <option value="DISPUTE" {{ 'selected' if rtype == 'DISPUTE' }} data-hint="Correct the report: days you were onsite / on leave / on OB that are missing, or a commitment that was not updated in time.">Dispute (correct the report)</option>
+        <option value="COMMITMENT_CHANGE" {{ 'selected' if rtype == 'COMMITMENT_CHANGE' }} data-hint="New baseline commitment from the chosen week onward.">Commitment change (from a week onward)</option>
+      </select>
+    </div>
+    <div>
+      <label for="category">Category</label>
+      <select id="category" name="category">{% for c in categories %}<option>{{ c }}</option>{% endfor %}</select>
+    </div>
+  </div>
+  <p id="type-hint" class="small muted mt"></p>
+
+  <div class="form-grid mt">
+    <div>
+      <label for="start">Start (week of / from)</label>
+      <input id="start" type="date" name="start_date" required>
+    </div>
+    <div data-for-types="EXEMPTION,DISPUTE">
+      <label for="end">End (inclusive)</label>
+      <input id="end" type="date" name="end_date">
+    </div>
+    <div data-for-types="EXEMPTION,COMMITMENT_CHANGE,DISPUTE">
+      <label for="dpw">Days onsite per week</label>
+      <input id="dpw" type="number" name="days_per_week" min="0" max="5" step="0.5" placeholder="e.g. 2">
+    </div>
+    <div data-for-types="DISPUTE">
+      <label for="credited">Days to credit as valid (YYYY-MM-DD, comma separated)</label>
+      <input id="credited" name="credited_dates" placeholder="2026-03-10, 2026-03-12">
+    </div>
+  </div>
+  <div class="mt">
+    <label for="reason">Reason</label>
+    <textarea id="reason" name="reason" maxlength="2000" placeholder="Short explanation for your manager and People Partner."></textarea>
+    <p class="small muted">Please do <strong>not</strong> include medical details. Select the "Medical" category instead; supporting documents stay with HR.</p>
+  </div>
+  <div class="toolbar mt">
+    <button class="btn primary" type="submit">Submit request</button>
+    <a class="btn" href="/requests">Cancel</a>
+  </div>
+</form>
+{% endblock %}

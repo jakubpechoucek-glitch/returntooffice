@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_pill, type_label %}
+{% block title %}Requests{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Requests</h1><div class="muted">Weekly exemptions, commitment changes and disputes, with their approval status.</div></div>
+  <div class="toolbar"><a class="btn primary" href="/requests/new">New request</a></div>
+</div>
+
+<div class="card">
+  <h2>Waiting for my decision ({{ inbox|length }})</h2>
+  {% if inbox %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Employee</th><th>Type</th><th>Period</th><th class="num">Days/wk</th><th>Category</th><th>Step</th><th>Submitted</th></tr></thead>
+    <tbody>
+    {% for r in inbox %}
+      {% set step = r.steps|selectattr('decision.value', 'equalto', 'PENDING')|first %}
+      <tr>
+        <td><a href="/requests/{{ r.id }}">#{{ r.id }}</a></td>
+        <td>{{ r.employee.full_name }}</td>
+        <td>{{ type_label(r.type.value) }}</td>
+        <td class="small nowrap">{{ r.start_date }}{% if r.end_date != r.start_date %} – {{ r.end_date }}{% endif %}</td>
+        <td class="num">{{ r.days_per_week|num }}</td>
+        <td class="small">{{ r.category }}</td>
+        <td class="small">{{ step.kind.value|replace('_', ' ')|lower|capitalize if step else '' }}</td>
+        <td class="small">{{ r.created_at.strftime('%Y-%m-%d') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">Nothing to approve.</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Submitted by me or about me</h2>
+  {% if mine %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Employee</th><th>Type</th><th>Period</th><th class="num">Days/wk</th><th>Category</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for r in mine %}
+      <tr>
+        <td><a href="/requests/{{ r.id }}">#{{ r.id }}</a></td>
+        <td>{{ r.employee.full_name }}</td>
+        <td>{{ type_label(r.type.value) }}</td>
+        <td class="small nowrap">{{ r.start_date }}{% if r.end_date != r.start_date %} – {{ r.end_date }}{% endif %}</td>
+        <td class="num">{{ r.days_per_week|num }}</td>
+        <td class="small">{{ r.category }}</td>
+        <td>{{ status_pill(r.status.value) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">No requests yet.</p>{% endif %}
+</div>
+{% endblock %}

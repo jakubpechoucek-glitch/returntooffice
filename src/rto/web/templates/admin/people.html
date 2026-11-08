@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}People{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>People and reporting lines</h1>
+    <div class="muted">Current placement. Open a person to change manager, department, office or commitment (effective-dated).</div></div>
+  <form method="get" class="toolbar">
+    <div><label>Search</label><input name="q" value="{{ q }}" placeholder="Name, e-mail or number"></div>
+    <div><label>Unit</label><select name="unit" data-autosubmit><option value="">All</option>{% for u in units %}<option value="{{ u.id }}" {{ 'selected' if unit == u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+</div>
+<div class="card table-wrap">
+  <table>
+    <thead><tr><th>Employee</th><th>#</th><th>Position</th><th>Department</th><th>Manager</th><th>Office</th><th>Tracked</th></tr></thead>
+    <tbody>
+    {% for e in emps %}{% set a = assign[e.id] %}
+      <tr>
+        <td><a href="/admin/people/{{ e.id }}">{{ e.full_name }}</a><div class="small muted">{{ e.email }}</div></td>
+        <td class="small">{{ e.employee_number }}</td>
+        <td class="small">{{ e.position or '' }}</td>
+        <td class="small">{{ a.org_unit.name if a and a.org_unit else '–' }}</td>
+        <td class="small">{{ a.manager.full_name if a and a.manager else '–' }}</td>
+        <td class="small">{{ a.location.name if a and a.location else '–' }}</td>
+        <td>{% if e.in_scope %}<span class="pill ok">Yes</span>{% else %}<span class="pill neutral">No</span>{% endif %}{% if e.termination_date %} <span class="pill warn">left {{ e.termination_date }}</span>{% endif %}</td>
+      </tr>
+    {% else %}<tr><td colspan="7" class="muted">No people found.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

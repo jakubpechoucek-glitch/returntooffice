@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Holidays and excluded periods</h1>
+    <div class="muted">Holidays are neither valid nor missing days and never reduce the commitment. Weeks with fewer working days than the threshold are not counted.</div></div>
+  <form method="get" class="toolbar"><div><label>Year</label><input type="number" name="year" value="{{ year }}" min="2020" max="2100"></div><button class="btn" type="submit">Show</button></form>
+</div>
+<div class="grid cols-2">
+  <div class="card table-wrap">
+    <h2>Holidays {{ year }}</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Name</th><th>Type</th><th>Office</th><th></th></tr></thead>
+      <tbody>
+      {% for h in holidays %}
+        <tr><td class="nowrap">{{ h.date.strftime('%a %d %b') }}</td><td>{{ h.name }}</td><td class="small">{{ h.kind|lower }}</td><td class="small">{{ h.location.name if h.location else 'All offices' }}</td>
+          <td class="right">{% if user.is_hr_admin %}<form method="post" action="/admin/calendar/holidays/{{ h.id }}/delete" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn small danger" type="submit" data-confirm="Remove {{ h.name }}?">Remove</button></form>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">No holidays recorded.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% if user.is_hr_admin %}
+    <form method="post" action="/admin/calendar/holidays" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div><label>Date</label><input type="date" name="date" required></div>
+        <div><label>Name</label><input name="name" required maxlength="255"></div>
+        <div><label>Type</label><select name="kind"><option>LEGAL</option><option>SPECIAL</option><option>REGIONAL</option></select></div>
+        <div><label>Office</label><select name="location_id"><option value="">All offices</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+      </div>
+      <button class="btn primary mt" type="submit">Add holiday</button>
+    </form>
+    {% endif %}
+  </div>
+  <div class="card table-wrap">
+    <h2>Excluded periods (waivers)</h2>
+    <table>
+      <thead><tr><th>Period</th><th>Mode</th><th>Scope</th><th>Reason</th><th></th></tr></thead>
+      <tbody>
+      {% for p in periods %}
+        <tr><td class="nowrap">{{ p.start_date }} – {{ p.end_date }}</td><td class="small">{{ 'Whole weeks' if p.mode.value == 'WEEK' else 'Days (like holidays)' }}</td>
+          <td class="small">{{ p.org_unit.name if p.org_unit else 'All units' }}{% if p.location %} · {{ p.location.name }}{% endif %}</td><td class="small">{{ p.reason }}</td>
+          <td class="right">{% if user.is_hr_admin %}<form method="post" action="/admin/calendar/periods/{{ p.id }}/delete" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn small danger" type="submit" data-confirm="Remove this excluded period?">Remove</button></form>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">None.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% if user.is_hr_admin %}
+    <form method="post" action="/admin/calendar/periods" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div><label>From</label><input type="date" name="start_date" required></div>
+        <div><label>To (inclusive)</label><input type="date" name="end_date" required></div>
+        <div><label>Mode</label><select name="mode"><option value="WEEK">Exclude whole weeks</option><option value="DAYS">Treat days like holidays</option></select></div>
+        <div><label>Unit</label><select name="org_unit_id"><option value="">All units</option>{% for u in units %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
+        <div><label>Office</label><select name="location_id"><option value="">All offices</option>{% for l in locations %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="mt"><label>Reason</label><input name="reason" required maxlength="500" placeholder="e.g. Typhoon Kristine – offices closed"></div>
+      <button class="btn primary mt" type="submit">Add excluded period</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

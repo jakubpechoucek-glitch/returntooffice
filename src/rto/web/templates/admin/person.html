@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ emp.full_name }} · Admin{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/people">People</a> ›</div>
+    <h1>{{ emp.full_name }}</h1>
+    <div class="muted">#{{ emp.employee_number }} · {{ emp.email }} · {{ emp.position or '' }}{% if emp.ceo_level %} · CEO-{{ emp.ceo_level }}{% endif %}</div></div>
+  <a class="btn" href="/employees/{{ emp.id }}">Compliance view</a>
+</div>
+
+<div class="grid cols-2">
+  <form method="post" action="/admin/people/{{ emp.id }}/assignment" class="card">
+    <h2>Reporting line, department and office</h2>
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div><label>Effective from</label><input type="date" name="effective_from" value="{{ today }}" required></div>
+      <div><label>Manager</label>
+        <select name="manager_id"><option value="">— none —</option>
+          {% for m in managers %}<option value="{{ m.id }}" {{ 'selected' if current and current.manager_id == m.id }}>{{ m.full_name }} ({{ m.email }})</option>{% endfor %}
+        </select></div>
+      <div><label>Department</label>
+        <select name="org_unit_id"><option value="">— none —</option>
+          {% for u in units %}<option value="{{ u.id }}" {{ 'selected' if current and current.org_unit_id == u.id }}>{{ u.name }}</option>{% endfor %}
+        </select></div>
+      <div><label>Office</label>
+        <select name="location_id"><option value="">— none —</option>
+          {% for l in locations %}<option value="{{ l.id }}" {{ 'selected' if current and current.location_id == l.id }}>{{ l.name }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <p class="small muted mt">The previous placement is closed the day before the effective date, so historical reports keep the old reporting line. Cycles are rejected.</p>
+    <button class="btn primary mt" type="submit">Save change</button>
+  </form>
+
+  <div>
+    <form method="post" action="/admin/people/{{ emp.id }}/commitment" class="card">
+      <h2>Baseline commitment</h2>
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div><label>Effective from (week of)</label><input type="date" name="effective_from" value="{{ today }}" required></div>
+        <div><label>Days onsite per week</label><input type="number" name="days_per_week" min="0" max="5" step="0.5" required></div>
+      </div>
+      <button class="btn primary mt" type="submit">Set commitment</button>
+    </form>
+    <form method="post" action="/admin/people/{{ emp.id }}/profile" class="card">
+      <h2>Tracking</h2>
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div><label class="nowrap"><input type="checkbox" name="in_scope" value="true" {{ 'checked' if emp.in_scope }}> Tracked by the onsite report</label></div>
+        <div><label>Separation date</label><input type="date" name="termination_date" value="{{ emp.termination_date or '' }}"></div>
+      </div>
+      <button class="btn mt" type="submit">Save</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid cols-2">
+  <div class="card table-wrap">
+    <h2>Placement history</h2>
+    <table>
+      <thead><tr><th>From</th><th>Until</th><th>Department</th><th>Manager</th><th>Office</th><th>Source</th></tr></thead>
+      <tbody>
+      {% for h in history %}
+        <tr><td>{{ h.valid_from }}</td><td>{{ h.valid_to or 'open' }}</td><td class="small">{{ h.org_unit.name if h.org_unit else '–' }}</td>
+          <td class="small">{{ h.manager.full_name if h.manager else '–' }}</td><td class="small">{{ h.location.name if h.location else '–' }}</td><td class="small">{{ h.source }}</td></tr>
+      {% else %}<tr><td colspan="6" class="muted">No placement yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card table-wrap">
+    <h2>Commitments</h2>
+    <table>
+      <thead><tr><th>Type</th><th class="num">Days</th><th>From</th><th>Until</th><th>Source</th></tr></thead>
+      <tbody>
+      {% for c in commitments %}
+        <tr><td>{{ c.kind.value|capitalize }}</td><td class="num">{{ c.days_per_week|num }}</td><td>{{ c.valid_from }}</td><td>{{ c.valid_to or 'open' }}</td>
+          <td class="small">{{ c.source }}{% if c.request_id %} <a href="/requests/{{ c.request_id }}">#{{ c.request_id }}</a>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">Default commitment applies.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="small"><a href="/admin/audit?entity=employee&entity_id={{ emp.id }}">Audit trail for this person →</a></p>
+{% endblock %}

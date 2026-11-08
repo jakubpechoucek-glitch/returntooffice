@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="card">
+    <h1>Sign in (development mode)</h1>
+    <p class="muted">In production, users sign in with their Microsoft Entra ID account (single sign-on).
+      This page lets you impersonate any person to try out roles and visibility. It is disabled when
+      <code>RTO_AUTH_MODE=oidc</code> and refused at start-up in production.</p>
+    <form method="get" action="/login" class="toolbar">
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="grow"><label for="q">Search</label><input id="q" name="q" value="{{ q }}" placeholder="Name or e-mail"></div>
+      <button class="btn" type="submit">Search</button>
+    </form>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Person</th><th>Position</th><th>Roles</th><th></th></tr></thead>
+      <tbody>
+      {% for p in people %}
+        <tr>
+          <td>{{ p.full_name }}<div class="small muted">{{ p.email }}</div></td>
+          <td class="small">{{ p.position or '' }}{% if not p.in_scope %} <span class="pill neutral">not tracked</span>{% endif %}</td>
+          <td class="small">{% for r in roles.get(p.id, []) %}<span class="pill neutral">{{ r }}</span> {% endfor %}{% if p.people_level == 'People Manager' %}<span class="pill neutral">MANAGER</span>{% endif %}</td>
+          <td class="right">
+            <form method="post" action="/login/dev" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf }}">
+              <input type="hidden" name="email" value="{{ p.email }}">
+              <input type="hidden" name="next" value="{{ next }}">
+              <button class="btn small primary" type="submit">Sign in as</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

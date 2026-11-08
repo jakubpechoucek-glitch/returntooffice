@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_pill, type_label %}
+{% block title %}Request #{{ req.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="breadcrumb"><a href="/requests">Requests</a> ›</div>
+    <h1>{{ type_label(req.type.value) }} #{{ req.id }} {{ status_pill(req.status.value) }}</h1>
+    <div class="muted">for <a href="/employees/{{ req.employee_id }}">{{ req.employee.full_name }}</a>
+      {% if req.submitted_by and req.submitted_by_id != req.employee_id %}· submitted by {{ req.submitted_by.full_name }}{% endif %}
+      · {{ req.created_at.strftime('%Y-%m-%d %H:%M') }}{% if req.source == 'IMPORT' %} · imported{% endif %}</div>
+  </div>
+  {% if can_withdraw %}
+  <form method="post" action="/requests/{{ req.id }}/withdraw">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button class="btn danger" type="submit" data-confirm="Withdraw this request?">Withdraw</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2>Details</h2>
+    <table>
+      <tr><th>Period</th><td>{{ req.start_date }}{% if req.end_date != req.start_date %} – {{ req.end_date }}{% endif %}{% if req.type.value == 'COMMITMENT_CHANGE' %} onward{% endif %}</td></tr>
+      {% if req.days_per_week is not none %}<tr><th>Days onsite per week</th><td>{{ req.days_per_week|num }}</td></tr>{% endif %}
+      {% if req.credited_dates %}<tr><th>Days credited</th><td>{{ req.credited_dates|join(', ') }}</td></tr>{% endif %}
+      <tr><th>Category</th><td>{{ req.category }}</td></tr>
+      <tr><th>Reason</th><td>{{ req.reason or '–' }}</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Approval</h2>
+    <ul class="steps">
+      {% for s in req.steps %}
+      <li class="{{ s.decision.value }}">
+        <span class="dot"></span>
+        <div>
+          <strong>{{ s.kind.value|replace('_', ' ')|lower|capitalize }}</strong>
+          {% if s.approver %} · {{ s.approver.full_name }}{% elif s.kind.value == 'PEOPLE_PARTNER' %} · any People Partner in scope{% endif %}
+          <div class="small muted">{{ s.decision.value|capitalize }}{% if s.decided_by %} by {{ s.decided_by.full_name }}{% endif %}{% if s.decided_at %} on {{ s.decided_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}</div>
+          {% if s.comment %}<div class="small">“{{ s.comment }}”</div>{% endif %}
+        </div>
+      </li>
+      {% else %}
+      <li><span class="dot"></span><div class="muted">No approval steps (imported or auto-approved).</div></li>
+      {% endfor %}
+    </ul>
+    {% if can_decide %}
+    <form method="post" action="/requests/{{ req.id }}/decision" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <label for="comment">Comment (required when rejecting)</label>
+      <textarea id="comment" name="comment" maxlength="2000"></textarea>
+      {% if step and step.approver_id and step.approver_id != user.id %}<p class="small muted">You are acting as HR Admin on behalf of the named approver; this is recorded in the audit log.</p>{% endif %}
+      <div class="toolbar mt">
+        <button class="btn ok" type="submit" name="decision" value="approve">Approve</button>
+        <button class="btn danger" type="submit" name="decision" value="reject">Reject</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
