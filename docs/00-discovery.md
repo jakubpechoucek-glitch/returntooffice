@@ -130,64 +130,17 @@ Function Head submits by month-end, ExCo approves, and HR receives the list. Lat
 The goal is a prototype that IT can harden without rewriting it.
 
 - **Frontend:** React + TypeScript SPA.
-- **Backend:** a stateless REST API (OpenAPI-documented) plus a background worker for ingestion and compute jobs. The compute engine is a pure, unit-tested library so the policy rules are auditable.
-- **Database:** PostgreSQL, with versioned migrations. Policy parameters (thresholds, commitments, holiday calendars) live in data, not code, and carry effective dating.
-- **AuthN:** OpenID Connect / OAuth 2.0. We assume Microsoft Entra ID, given SharePoint and Power BI in the landscape. Local dev uses a mock IdP (Keycloak).
-- **AuthZ:** RBAC plus data scoping by org hierarchy. This replaces Power BI RLS.
-- **Infra:** Docker images, a Kubernetes/Helm-ready layout, Redis for caching and job queue, structured logs, health checks and metrics. CI runs tests, lint and container builds.
+- **Backend (Python, confirmed):** a stateless FastAPI REST API (OpenAPI-documented) plus a background worker for ingestion and compute jobs. The compute engine is a pure, unit-tested library so the policy rules are auditable.
+- **Database:** PostgreSQL, with Alembic migrations. Policy parameters (per-department thresholds, commitments, holiday calendars, excluded periods) live in data, not code, and carry effective dating.
+- **AuthN (Entra ID, confirmed):** OpenID Connect / OAuth 2.0 with Microsoft Entra ID. Local dev uses a mock OIDC provider (Keycloak).
+- **AuthZ:** RBAC plus data scoping by org hierarchy. This replaces Power BI RLS. The hierarchy is maintained in the admin UI.
+- **Infra (Kubernetes, confirmed):** Docker images, a Helm chart, horizontally scalable API pods, Redis for caching and job queue, structured logs, health/readiness probes and Prometheus metrics. Docker Compose is used for local dev. CI runs tests, lint and container builds.
 - **Audit:** an immutable audit log for every manual change: commitments, exemptions, dispute decisions, overrides.
 - **Data ingestion:** for the MVP, CSV/XLSX uploads of the same extracts HR uses today. Later, scheduled connectors to the DWH, DACS, HC Connect and Splunk.
 
 ## 5. Open questions
 
-The proposed default is in *italics*. If the default is fine, a "yes" is enough.
-
-### A. Policy and calculation
-
-1. **C1/C2:** What are the monthly and annual pass thresholds? *Default: they are configurable; ship with monthly = 100% and annual = 75%.*
-2. What is a "working day" when counting the ≥3-day rule and assigning weeks to months? *Default: Mon–Fri minus official holidays.* Do any in-scope employees have Saturday shifts?
-3. Regional holidays apply only to some offices. Do we keep holiday calendars per office location, and does each employee have a "designated office"? *Default: yes.*
-4. What is the minimum presence for a valid onsite day? Options: any tap-in, tap-in plus tap-out, or N hours. §6.2 says partial attendance should not routinely bypass the policy. *Default: a tap-in and a tap-out on the same day, at any company office. Short days are flagged for review but still counted.*
-5. Is the Monday/Friday "core day" a tracked KPI or informational only? *Default: informational indicator only.*
-6. How are half-day leave and half-day OB counted? *Default: a half-day leave plus a half-day onsite = 1 valid day; a half-day leave alone = 0.5.*
-7. If a commitment or exemption changes mid-week, which value applies to that week? *Default: the value in effect on the week's Monday.*
-8. How are joiners, leavers and transfers handled mid-month? *Default: weeks before the hire date or after the termination date are not considered; a transfer moves visibility from the transfer date onward.*
-9. Should the tool optionally track special requirements (PIP, probation) for managers, even though they stay out of the official report? *Default: not in the MVP.*
-
-### B. Data sources
-
-10. ~~Can you share sample extracts?~~ **In progress.** Remar is preparing about one month of masked data for the pilot departments. Please keep the **exact column layout** of the real extracts (masking only values), so the importer works with production exports unchanged. Until the data arrives, I will generate synthetic data. Is Splunk Wi-Fi data part of the package? The summary does not mention it.
-11. When sources conflict, which one wins? For example, Wi-Fi present but no door tap, or a door tap but a leave filed. *Default: door access > timekeeping > Splunk Wi-Fi for physical presence. An approved leave or OB counts as valid regardless. Conflicts are flagged.*
-12. What identifies an employee across all systems (employee ID, badge ID, AD account / UPN)? Is there a mapping table?
-13. Does the masterlist contain the manager hierarchy (direct manager, next-level manager), department, BU, People Partner, and ExCo / ExCo-1 flags?
-
-### C. Workflows
-
-14. **Commitments:** who records an employee's commitment (manager, PP, HR), and does it need approval? *Default: the manager proposes it, and the PP or HR approves it, with effective dates.*
-15. **Exemptions:** who files them now that filing will be weekly: the employee, the manager or the Function Head? What is the approval chain? *Default: employee or manager files → Function Head → ExCo approves → HR is notified.* Is there still a cutoff? *Default: the 5th working day of the following month.*
-16. **Disputes:** *Partly answered.* The chain is submitter → manager approval → People Partner review (see **C7** for which manager), and the filing window is about one week after the initial report. Still open: do we need attachments? SLAs or auto-escalation? *Default: optional attachments; reminder e-mails, no auto-escalation.* Should the window close automatically, after which the report is finalized and locked? *Default: yes, HR Analytics finalizes and locks the month; later changes only by HR override, with an audit trail.*
-17. Can an employee dispute a single day, a whole week, or both? *Default: a specific day, with a reason code.*
-18. Notifications: e-mail, Microsoft Teams, or both? *Default: e-mail in the MVP and Teams later.*
-
-### D. Access and visibility
-
-19. Please confirm the roles. *Default:* **Employee** (sees own data), **Manager** (direct and indirect reports), **People Partner** (their assigned BUs/departments), **ExCo / Function Head** (their division), **HR Analytics** (everything, plus data operations), **HR Admin / Policy owner** (configures rules), **Auditor** (read-only).
-20. Should employees see their own daily raw data (door taps, Wi-Fi), or only the derived status? Splunk Wi-Fi data is privacy-sensitive under the Philippine Data Privacy Act. *Default: employees see derived day status and its source type, not raw Wi-Fi logs.*
-21. Data retention period for raw logs and for computed results?
-
-### E. Non-functional and enterprise
-
-22. ~~Peak concurrency?~~ *Answered:* about 400 concurrent filers and 900–1,000 people managers. Still open: the total number of in-scope employees. *Design target: 10,000 employees and 1,000 concurrent users, so there is a safe margin.*
-23. Where will IT host it: Azure, on-prem Kubernetes, AWS? What is their preferred backend language: .NET, Java, Python, Node? This matters most for handover. *Default: Python (FastAPI) or TypeScript (NestJS) in containers, with Azure-friendly choices.*
-24. Is Microsoft Entra ID the corporate IdP? Can we register an app for the prototype, or should we use a mock IdP until hardening?
-25. Is Power BI still needed as a consumer? *Default: expose a read-only reporting schema/view in PostgreSQL and CSV/XLSX export so Power BI can connect.*
-26. Where should the **POC run for the demos** (for example the Tuesday follow-up)? A paid cloud host with a managed PostgreSQL is fine for synthetic data, but **no real employee data** should go there. Even masked pilot data should only go to a company-approved environment.
-
-### F. Pilot
-
-27. Which department(s) are selected for the pilot, and how many employees and org levels do they have?
-28. Should employees also get self-service in the pilot, or is it managers + People Partners + HR only? *Default: all roles, including employee self-service, limited to pilot departments.*
-29. Should Collections' externally computed figures be importable, so the final company report is complete, or does Collections stay out of the tool entirely? *Default: out of scope for the MVP.*
+The questions still open for HR are in [`open-questions-hr.md`](open-questions-hr.md), written so HR can answer them directly. The technical questions (stack, identity provider, scale) are answered; see §6.
 
 ---
 
@@ -200,3 +153,11 @@ The proposed default is in *italics*. If the default is fine, a "yes" is enough.
 | 2026-11-03 | Visibility is controlled by the web tool based on the org hierarchy (instead of Power BI RLS) | Meeting |
 | 2026-11-03 | Exemptions and commitment changes are recorded per week, not per month | Meeting |
 | 2026-11-03 | Pilot data is masked: medical reasons become a generic "Medical" label, identities become fictional | Meeting |
+| 2026-11-08 | **Compliance thresholds are configurable per department.** Weekly commitment default, monthly adherence pass %, annual compliance pass % and minimum working days per considered week. Resolution order: department override → BU → company default. All values are effective-dated and audited. | Jakub |
+| 2026-11-08 | **Admin UI to maintain managers and the org hierarchy.** Admins can assign or change a manager, move employees or departments, and set People Partner assignments. All changes are effective-dated and audited. Imports from the masterlist can overwrite them or be reviewed first. | Jakub |
+| 2026-11-08 | Target runtime: **Kubernetes** (containers, Helm chart) | Jakub |
+| 2026-11-08 | Backend language: **Python** | Jakub |
+| 2026-11-08 | Identity provider: **Microsoft Entra ID** (OIDC / OAuth 2.0). Local dev uses a mock OIDC provider. | Jakub |
+| 2026-11-08 | Scale: **thousands of employees, hundreds of managers**. Design target is 10,000 employees and 1,000 concurrent users. | Jakub |
+| 2026-11-08 | Open policy and process questions go to HR (`open-questions-hr.md`). Until they are answered, the documented defaults apply and stay configurable where possible. | Jakub |
+| 2026-11-08 | Implementation starts once the dummy data file arrives. The importer is built against its exact layout. | Jakub |
