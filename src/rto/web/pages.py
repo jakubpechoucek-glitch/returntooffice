@@ -167,6 +167,12 @@ def reports_export(
 # --- requests ------------------------------------------------------------------------------------
 
 
+@router.get("/help")
+def help_page(request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    my_roles = sorted({r.value for r in p.roles} | {r.value for r in p.idp_roles})
+    return render(request, "help.html", **nav_ctx(request, db, p), my_roles=my_roles)
+
+
 @router.get("/requests")
 def requests_index(request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     return render(request, "requests/index.html", **nav_ctx(request, db, p), mine=my_requests(db, p), inbox=inbox(db, p))

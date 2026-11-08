@@ -13,6 +13,24 @@
       <button class="btn" type="submit">Search</button>
     </form>
   </div>
+  {% if not q %}
+  <div class="card">
+    <h2>Suggested demo tour</h2>
+    <table>
+      <thead><tr><th>Sign in as</th><th>Role</th><th>Try this</th></tr></thead>
+      <tbody>
+        <tr><td><code>francis.flores@example.com</code></td><td>Employee</td><td>Dashboard, the day-by-day strip (hover the orange days), file an exemption</td></tr>
+        <tr><td><code>isabel.domingo@example.com</code></td><td>Team lead</td><td>A dispute is waiting in <em>Requests</em>: approve it</td></tr>
+        <tr><td><code>pp.risk@example.com</code></td><td>People Partner (Risk)</td><td>Final review of approved requests; report filtered to Risk; export to Excel</td></tr>
+        <tr><td><code>andrea.agustin@example.com</code></td><td>Department head (4 levels)</td><td><em>My team</em>: drill down through the hierarchy</td></tr>
+        <tr><td><code>daphne.lim@example.com</code></td><td>Team lead (Collections)</td><td>Pending exemption from Hazel Ramos</td></tr>
+        <tr><td><code>hr.analytics@example.com</code></td><td>HR Analytics</td><td>Imports (download sample files, edit, re-upload); publish and finalize a month</td></tr>
+        <tr><td><code>hr.admin@example.com</code></td><td>HR Admin</td><td>Thresholds per department, change a manager in <em>People</em>, holidays and waivers, roles, audit log</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted mt">Every role has a <strong>Help</strong> page in the top menu.</p>
+  </div>
+  {% endif %}
   <div class="card table-wrap">
     <table>
       <thead><tr><th>Person</th><th>Position</th><th>Roles</th><th></th></tr></thead>

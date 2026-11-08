@@ -19,6 +19,7 @@
       <a href="/reports" class="{{ 'active' if path.startswith('/reports') }}">Reports</a>
       <a href="/requests" class="{{ 'active' if path.startswith('/requests') }}">Requests {% if inbox_count %}<span class="badge">{{ inbox_count }}</span>{% endif %}</a>
       {% if user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR') %}<a href="/admin" class="{{ 'active' if path.startswith('/admin') }}">Admin</a>{% endif %}
+      <a href="/help" class="{{ 'active' if path.startswith('/help') }}">Help</a>
     </nav>
     <div class="user-box">
       {% if environment != 'production' %}<span class="env">{{ environment|upper }}</span>{% endif %}

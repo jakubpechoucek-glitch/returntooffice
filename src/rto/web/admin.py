@@ -436,11 +436,34 @@ IMPORT_KINDS = {
 }
 
 
+SAMPLE_FILES = {
+    "onsite_report_2026_jan_mar_anonymized.xlsx": ("onsite_report", "Legacy onsite report (Collections, Jan + Mar 2026)"),
+    "synthetic/masterlist_risk.csv": ("masterlist", "Masterlist / hierarchy (Risk Management)"),
+    "synthetic/absences_risk_2026q1.csv": ("absences", "Leave and OB, Q1 2026"),
+    "synthetic/presence_risk_2026q1.csv": ("presence", "Door / timekeeping / Wi-Fi events, Q1 2026"),
+}
+
+
+@router.get("/imports/samples/{name:path}")
+def sample_file(name: str, p: Principal = Depends(data_manager)):
+    from fastapi.responses import FileResponse
+
+    from rto.config import project_root
+
+    if name not in SAMPLE_FILES:  # whitelist: no arbitrary file access
+        raise ServiceError("Unknown sample file")
+    path = project_root() / "sample_data" / name
+    if not path.is_file():
+        raise ServiceError("Sample file is not available in this deployment")
+    return FileResponse(path, filename=path.name)
+
+
 @router.get("/imports")
 def imports(request: Request, p: Principal = Depends(data_manager), db: Session = Depends(get_db)):
     batches = list(db.scalars(select(ImportBatch).order_by(ImportBatch.created_at.desc()).limit(50)))
     last = request.session.pop("last_import", None)
-    return render(request, "admin/imports.html", **nav_ctx(request, db, p), batches=batches, kinds=IMPORT_KINDS, last=last)
+    return render(request, "admin/imports.html", **nav_ctx(request, db, p), batches=batches, kinds=IMPORT_KINDS, last=last,
+                  samples=SAMPLE_FILES)
 
 
 @router.post("/imports", dependencies=[Depends(csrf_protect)])

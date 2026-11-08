@@ -36,7 +36,7 @@ def test_anonymous_is_redirected_and_api_401(client):
     "path",
     ["/", "/team", "/reports", "/requests", "/requests/new", "/admin", "/admin/thresholds", "/admin/people",
      "/admin/org", "/admin/roles", "/admin/calendar", "/admin/imports", "/admin/months", "/admin/audit",
-     "/reports/export.xlsx", "/reports/export.csv", "/api/v1/me", "/api/v1/results/monthly?month=2026-03"],
+     "/reports/export.xlsx", "/reports/export.csv", "/help", "/admin/imports/samples/synthetic/masterlist_risk.csv", "/api/v1/me", "/api/v1/results/monthly?month=2026-03"],
 )
 def test_hr_admin_pages(client, path):
     login(client, "hr.admin@example.com")
@@ -124,3 +124,11 @@ def test_staging_dev_auth_requires_demo_password():
 
     with pytest.raises(ValueError):
         Settings(environment="staging", auth_mode="dev", demo_password="")
+
+
+def test_sample_download_is_whitelisted(client):
+    login(client, "hr.admin@example.com")
+    assert client.get("/admin/imports/samples/../pyproject.toml").status_code in (400, 404)
+    login(client, "hazel.ramos@example.com")
+    assert client.get("/admin/imports/samples/synthetic/masterlist_risk.csv").status_code == 403
+    assert client.get("/help").status_code == 200

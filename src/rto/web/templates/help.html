@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Help{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Help</h1>
+    <div class="muted">How the onsite compliance tool works, and what you can do in your role.</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Your access</h2>
+  <p>You are signed in as <strong>{{ user.employee.full_name }}</strong>.
+    Your guides:
+    <a class="pill neutral" href="#employee">Employee</a>
+    {% if is_manager %}<a class="pill neutral" href="#manager">Manager</a>{% endif %}
+    {% for r in my_roles %}<a class="pill neutral" href="#{{ r|lower }}">{{ r|replace('_', ' ')|title }}</a> {% endfor %}
+  </p>
+  <p class="small muted">Everyone sees their own data. Managers also see everyone below them in the reporting line.
+    The other roles are granted by HR.</p>
+</div>
+
+<div class="grid cols-2">
+<div class="card">
+  <h2>Key terms</h2>
+  <table>
+    <tr><th>Commitment</th><td>How many days per week you must be onsite: usually 3 (ExCo-1: 4, ExCo: 5), or less with an approved exemption.</td></tr>
+    <tr><th>Valid day</th><td>A day onsite (door tap in and out), on approved leave, or on approved Official Business. Holidays do not count, and they do not lower the commitment.</td></tr>
+    <tr><th>Considered week</th><td>A Monday–Sunday week with at least 3 working days. The week that spans New Year is never counted.</td></tr>
+    <tr><th>Week met</th><td>Valid days ≥ commitment. Missed days cannot be made up in another week.</td></tr>
+    <tr><th>Monthly adherence</th><td>Weeks met ÷ considered weeks. The month is met when it reaches your department's threshold (usually 75%).</td></tr>
+    <tr><th>Annual compliance</th><td>Months met ÷ 12. During the year, use the <em>year-to-date</em> figure.</td></tr>
+    <tr><th>After dispute</th><td>The final figure, including approved disputes. Cells outlined in blue were changed by a dispute.</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h2>Reading the screens</h2>
+  <p><span class="wk met">3/3</span> week met · <span class="wk miss">2/3</span> not met (valid days / commitment) ·
+     <span class="wk na">n/a</span> week not counted (hover for the reason)</p>
+  <div class="legend">
+    <span><span class="day ONSITE">M</span> Onsite</span><span><span class="day LEAVE">M</span> Leave</span>
+    <span><span class="day OB">M</span> Official business</span><span><span class="day HOLIDAY">M</span> Holiday</span>
+    <span><span class="day NOT_ONSITE">M</span> Not onsite</span><span><span class="day ONSITE flag">M</span> Flagged: hover for details</span>
+  </div>
+  <p class="small muted mt">Flags: <strong>INCOMPLETE_TAP</strong> = tapped in but not out (still counts) ·
+    <strong>NO_DOOR_TAP</strong> = timekeeping only (still counts) · <strong>WIFI_ONLY</strong> = only seen on office Wi-Fi
+    (does <em>not</em> count; raise a dispute if you were in the office).</p>
+</div>
+</div>
+
+<div class="card" id="employee">
+  <h2>Employee</h2>
+  <ol>
+    <li><a href="/">My dashboard</a> shows your year at a glance. Click a month for the week-by-week and day-by-day view.</li>
+    <li>Can't come in for specific weeks (medical, family, business)? File an <strong>Exemption</strong>: choose the weeks and how many days you can do.</li>
+    <li>Is the published report wrong (for example the turnstile was down, or a leave was not recorded)? Raise a <strong>Dispute</strong> and enter the day(s).</li>
+    <li>Has your agreed weekly commitment changed? File a <strong>Commitment change</strong> from that week onward.</li>
+    <li>Follow your requests under <a href="/requests">Requests</a>. They go to your manager first, then to your People Partner. You can withdraw a request while it is pending.</li>
+  </ol>
+  <p class="small muted">Never write medical details. Select the category “Medical”; that is enough.</p>
+</div>
+
+<div class="card" id="manager">
+  <h2>Manager</h2>
+  <ol>
+    <li><a href="/team">My team</a> lists your direct reports. For managers below you, “Organisation below” shows how their whole team did. Click it to go one level down; the breadcrumb takes you back up.</li>
+    <li><a href="/requests">Requests → Waiting for my decision</a>: approve, or reject with a comment. After your approval the request goes to the People Partner.</li>
+    <li>You can file requests on behalf of your reports (open the person and use the buttons). Your own manager then approves them.</li>
+    <li><a href="/reports">Reports</a> shows the same data as a table, with Excel/CSV export, limited to your organisation.</li>
+  </ol>
+</div>
+
+<div class="card" id="people_partner">
+  <h2>People Partner</h2>
+  <ol>
+    <li><a href="/reports">Reports</a> is filtered to your departments. Use “Not met only” for follow-ups, and export to Excel for leaders.</li>
+    <li>Your <a href="/requests">Requests</a> inbox has requests already approved by the manager. Your approval is final: the figures update immediately.</li>
+    <li>Use the “By manager” table to see which teams need attention, and click a manager to open their team view.</li>
+  </ol>
+</div>
+
+<div class="card" id="executive">
+  <h2>Executive</h2>
+  <p>Read-only view of your organisation: <a href="/reports">Reports</a> (department and manager roll-ups, export) and
+    <a href="/team">My team</a> for the hierarchy.</p>
+</div>
+
+<div class="card" id="hr_analytics">
+  <h2>HR Analytics: monthly cycle</h2>
+  <ol>
+    <li><a href="/admin/imports">Admin → Imports</a>: upload the masterlist, then leave/OB, then presence (door, timekeeping, Wi-Fi), or the legacy onsite report. Sample files can be downloaded on that page.</li>
+    <li>Check the import result: row counts, warnings, and for the legacy report the reconciliation against its own figures.</li>
+    <li>Review <a href="/reports">Reports</a>.</li>
+    <li><a href="/admin/months">Admin → Months → Publish</a> opens the review window (7 days). Managers and employees raise disputes.</li>
+    <li>When the window closes: <strong>Finalize</strong>. The month is locked; export the final report for ExCo.</li>
+    <li>Reporting lines and commitments can be corrected under <a href="/admin/people">Admin → People</a>.</li>
+  </ol>
+</div>
+
+<div class="card" id="hr_admin">
+  <h2>HR Admin</h2>
+  <ul>
+    <li><a href="/admin/thresholds">Thresholds</a>: monthly / annual pass %, minimum working days and default commitment for the company, a department group or one department, from a chosen date. Empty fields inherit from the parent.</li>
+    <li><a href="/admin/people">People</a>: change a person's manager, department, office or commitment with an effective date. History is kept.</li>
+    <li><a href="/admin/org">Organisation units</a>: create, rename or move departments.</li>
+    <li><a href="/admin/roles">Roles</a>: People Partner and Executive for specific units; HR Analytics, HR Admin and Auditor company-wide.</li>
+    <li><a href="/admin/calendar">Calendar</a>: holidays (all offices or one office) and waivers such as typhoons (exclude whole weeks, or treat days like holidays).</li>
+    <li>You can act on any pending approval step (recorded as an override in the audit log).</li>
+  </ul>
+</div>
+
+<div class="card" id="auditor">
+  <h2>Auditor</h2>
+  <p>Read-only access to all reports and the <a href="/admin/audit">audit log</a>: every change, approval, import, export and sign-in, with who and when.</p>
+</div>
+
+<div class="card">
+  <h2>FAQ</h2>
+  <p><strong>Why is my annual compliance so low?</strong> It is months met ÷ 12, so it grows during the year. Look at year-to-date.</p>
+  <p><strong>A holiday was in my week. Do I need fewer days?</strong> No. The commitment stays, but a week with fewer than 3 working days is not counted at all.</p>
+  <p><strong>I worked from another office.</strong> Any company office counts.</p>
+  <p><strong>Who sees my data?</strong> You, your managers up the line, your People Partner and HR.</p>
+</div>
+{% endblock %}

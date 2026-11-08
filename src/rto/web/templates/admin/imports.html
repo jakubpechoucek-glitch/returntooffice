@@ -34,6 +34,20 @@
 </form>
 
 <div class="card table-wrap">
+  <h2>Sample files</h2>
+  <p class="small muted">Download, edit (for example change a manager e-mail or add a leave day) and upload again to see the effect. All people are fictional.</p>
+  <table>
+    <thead><tr><th>File</th><th>Import as</th><th></th></tr></thead>
+    <tbody>
+    {% for name, (kind, label) in samples.items() %}
+      <tr><td>{{ label }}<div class="small muted">{{ name.split('/')[-1] }}</div></td><td class="small">{{ kinds[kind] }}</td>
+        <td class="right"><a class="btn small" href="/admin/imports/samples/{{ name }}">Download</a></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card table-wrap">
   <h2>History</h2>
   <table>
     <thead><tr><th>#</th><th>When</th><th>Kind</th><th>File</th><th class="num">Rows</th><th>Status</th><th>Summary</th></tr></thead>
