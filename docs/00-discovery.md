@@ -8,6 +8,7 @@ Sources used:
 - *Working Arrangements Manual*, version 1 (owner: CPO)
 - *Cross-functional Process Map for Onsite Report* (10 steps across People/HR, HR Analytics, IT/Systems, People Partners/BU)
 - Meeting transcript with HR (Karina Fornier, Remar Evangelista). The transcript is partial: it covers 0:00–0:37 and 21:32 to the end.
+- AI-generated meeting summary, "Exploratory: Automation of Work arrangement reports" (3 Nov 2026, 14:33–15:00). See §1a.
 
 This document records what we currently understand about the domain, the rules as we read them, contradictions in the source material, and open questions. The answers will be written back into this file (or into ADRs) so they are not lost.
 
@@ -24,6 +25,45 @@ Pain points raised in the meeting:
 3. **Disputes have no workflow.** HR wants an in-tool dispute with approvals: direct manager, then next-level manager, then People Partner review. The decision should flow straight into the report.
 4. **Manual distribution.** People Partners spend time slicing the report per department. HR considered Power BI row-level security. They want the web tool to decide **who sees what**.
 5. **Scale.** Many employees may sign in at once, for example right after the report is published or during a dispute window. The MVP/POC can be lighter, but the design must allow IT to harden it.
+6. **Managers lack visibility.** Department leadership does not always cascade the report down. Every people manager should see their direct reports and, where applicable, all teams below them, and nothing outside their own line.
+
+## 1a. Facts from the 3 Nov 2026 meeting summary
+
+### Current process
+
+- **Door logs** come from the security database (DACS). **Timekeeping** and **OB** come from HC Connect, integrated into the DWH. **Leave** records also come from HC Connect.
+- **Commitments and exceptions** are kept in manually maintained files, because HC Connect cannot store them. This is the main weakness of the current process.
+- HR Analytics runs scripts that pull updated timekeeping and OB data. They then consolidate the datasets, tag each day, compute onsite days against committed days, and roll the results up by employee, department, BU and leadership level.
+- **Review window.** After the initial report is released, BUs and managers have about **one week** to review it and raise disputes. Most disputes happen because a commitment was not updated before publication. People Partners discuss each disputed case with the manager and resolve it. The report is then finalized for ExCo.
+- **Collections** runs its own dispute process and sends HR its final figures before the report is finalized. Collections already tracks commitments and exceptions **weekly**.
+- Door-log and timekeeping integrations sometimes produce missing or wrong data, which needs IT support to fix.
+
+### Scale
+
+- About **400** potential exception filers could use the tool at the same time.
+- About **900–1,000** people managers in the organization.
+
+### Policy stability
+
+- The baseline policy is stable and is being routed for approval. No routine changes are expected.
+- One-off **waivers** do happen, for example severe weather or an earlier December holiday-period decision. Today HR Analytics handles them by manually excluding specific weeks.
+- **Implication:** the tool needs an HR-managed "excluded period" feature, with company-wide or per-office/department scope, a reason and an audit trail. This partly answers **C6**.
+
+### Requested workflow
+
+- Employees file exemptions and disputes themselves, the way they file leave or OB today.
+- Filing is **per specific week**, not for a whole month.
+- **Approval chain.** An employee or manager submits a commitment change, exemption or dispute. The (next-level) manager approves it, and the People Partner reviews it. The outcome is stored in the same system, so nothing is copied between files.
+
+### MVP / POC scope
+
+- Automate process-map steps **4–9**: consolidation, onsite tagging, computation, aggregation, validation/exceptions and finalization.
+- Pilot with **1–2 departments**. At least one should be structurally complex, with several org levels and common exception scenarios. **Collections is excluded.**
+- The pilot must demonstrate **hierarchical permissions**: lower-level managers see only their own team, and higher-level managers see all subordinate teams.
+- **Input data package** (Remar): about one month of raw data for the pilot departments, examples of exceptions and disputes, and manager reporting lines.
+- **Policy document** (Karina): the latest version.
+- **Data protection.** Barb's sign-off is required before anything is shared. Data will be masked: medical reasons reduced to a generic "Medical" label, and identifying details replaced with fictional values.
+- **Cadence.** The tool supports weekly reporting if HR can supply weekly raw data. In the MVP, HR uploads the files by hand. Scheduled integrations come later.
 
 ## 2. Domain rules as currently understood
 
@@ -82,7 +122,8 @@ Function Head submits by month-end, ExCo approves, and HR receives the list. Lat
 | C3 | §3 vs §6.2 | §3 lists only ExCo (5) and others (3). §6.2 adds ExCo-1 (4). We assume §6.2 is correct. |
 | C4 | §6.6.A | "The 52nd week … has only 2 working days." In 2026 the last week (28 Dec – 1 Jan) has 4 weekday working days, or 3 if 1 Jan is a holiday. Is the rule "always drop the final week of the year" or "drop weeks with < 3 working days"? |
 | C5 | §6.6.B (month rule) vs §6.6.C | If monthly adherence must be 100%, a single missed week fails the month. Please confirm the intended strictness. |
-| C6 | §7.3 | "Enter decision on exemptions for typhoon/medical reasons" reads like a placeholder. Is there a rule for typhoon or office-closure days, for example treating them like a holiday? |
+| C6 | §7.3 | "Enter decision on exemptions for typhoon/medical reasons" reads like a placeholder. *Partly answered (§1a):* typhoon and similar waivers are one-off decisions that exclude specific weeks. Still open: is the whole week excluded, or only the affected days, which would then be treated like holidays? |
+| C7 | Meeting | The transcript has Remar naming the **direct manager** as approver. The AI summary has Karina naming the **next-level manager**. Which is it, or are both required? |
 
 ## 4. Proposed architecture (for discussion)
 
@@ -115,7 +156,7 @@ The proposed default is in *italics*. If the default is fine, a "yes" is enough.
 
 ### B. Data sources
 
-10. Can you share sample (dummy) extracts **in the exact column layout** of the masterlist, DACS door logs, HC Connect leave/OB, timekeeping and Splunk Wi-Fi? Until they arrive, I will generate synthetic data in a format I propose.
+10. ~~Can you share sample extracts?~~ **In progress.** Remar is preparing about one month of masked data for the pilot departments. Please keep the **exact column layout** of the real extracts (masking only values), so the importer works with production exports unchanged. Until the data arrives, I will generate synthetic data. Is Splunk Wi-Fi data part of the package? The summary does not mention it.
 11. When sources conflict, which one wins? For example, Wi-Fi present but no door tap, or a door tap but a leave filed. *Default: door access > timekeeping > Splunk Wi-Fi for physical presence. An approved leave or OB counts as valid regardless. Conflicts are flagged.*
 12. What identifies an employee across all systems (employee ID, badge ID, AD account / UPN)? Is there a mapping table?
 13. Does the masterlist contain the manager hierarchy (direct manager, next-level manager), department, BU, People Partner, and ExCo / ExCo-1 flags?
@@ -124,7 +165,7 @@ The proposed default is in *italics*. If the default is fine, a "yes" is enough.
 
 14. **Commitments:** who records an employee's commitment (manager, PP, HR), and does it need approval? *Default: the manager proposes it, and the PP or HR approves it, with effective dates.*
 15. **Exemptions:** who files them now that filing will be weekly: the employee, the manager or the Function Head? What is the approval chain? *Default: employee or manager files → Function Head → ExCo approves → HR is notified.* Is there still a cutoff? *Default: the 5th working day of the following month.*
-16. **Disputes:** is the chain direct manager → next-level manager → People Partner review → HR Analytics applies the change? Do we need attachments, a filing window (for example 10 days after the report is published) and SLAs or auto-escalation?
+16. **Disputes:** *Partly answered.* The chain is submitter → manager approval → People Partner review (see **C7** for which manager), and the filing window is about one week after the initial report. Still open: do we need attachments? SLAs or auto-escalation? *Default: optional attachments; reminder e-mails, no auto-escalation.* Should the window close automatically, after which the report is finalized and locked? *Default: yes, HR Analytics finalizes and locks the month; later changes only by HR override, with an audit trail.*
 17. Can an employee dispute a single day, a whole week, or both? *Default: a specific day, with a reason code.*
 18. Notifications: e-mail, Microsoft Teams, or both? *Default: e-mail in the MVP and Teams later.*
 
@@ -136,11 +177,17 @@ The proposed default is in *italics*. If the default is fine, a "yes" is enough.
 
 ### E. Non-functional and enterprise
 
-22. How many employees are in scope, and what peak concurrent usage do you expect (for example, all of them on report day)?
+22. ~~Peak concurrency?~~ *Answered:* about 400 concurrent filers and 900–1,000 people managers. Still open: the total number of in-scope employees. *Design target: 10,000 employees and 1,000 concurrent users, so there is a safe margin.*
 23. Where will IT host it: Azure, on-prem Kubernetes, AWS? What is their preferred backend language: .NET, Java, Python, Node? This matters most for handover. *Default: Python (FastAPI) or TypeScript (NestJS) in containers, with Azure-friendly choices.*
 24. Is Microsoft Entra ID the corporate IdP? Can we register an app for the prototype, or should we use a mock IdP until hardening?
 25. Is Power BI still needed as a consumer? *Default: expose a read-only reporting schema/view in PostgreSQL and CSV/XLSX export so Power BI can connect.*
-26. Where should the **POC run for the demos** (for example the Tuesday follow-up)? A paid cloud host with a managed PostgreSQL is fine for synthetic data, but **no real employee data** should go there.
+26. Where should the **POC run for the demos** (for example the Tuesday follow-up)? A paid cloud host with a managed PostgreSQL is fine for synthetic data, but **no real employee data** should go there. Even masked pilot data should only go to a company-approved environment.
+
+### F. Pilot
+
+27. Which department(s) are selected for the pilot, and how many employees and org levels do they have?
+28. Should employees also get self-service in the pilot, or is it managers + People Partners + HR only? *Default: all roles, including employee self-service, limited to pilot departments.*
+29. Should Collections' externally computed figures be importable, so the final company report is complete, or does Collections stay out of the tool entirely? *Default: out of scope for the MVP.*
 
 ---
 
@@ -148,4 +195,8 @@ The proposed default is in *italics*. If the default is fine, a "yes" is enough.
 
 | Date | Decision | By |
 |---|---|---|
-| | *(to be filled after answers)* | |
+| 2026-11-03 | MVP scope = process steps 4–9 plus self-service filing workflows | Meeting |
+| 2026-11-03 | Pilot on 1–2 departments, at least one structurally complex; Collections excluded | Meeting |
+| 2026-11-03 | Visibility is controlled by the web tool based on the org hierarchy (instead of Power BI RLS) | Meeting |
+| 2026-11-03 | Exemptions and commitment changes are recorded per week, not per month | Meeting |
+| 2026-11-03 | Pilot data is masked: medical reasons become a generic "Medical" label, identities become fictional | Meeting |
