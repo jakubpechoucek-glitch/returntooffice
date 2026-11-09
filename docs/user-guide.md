@@ -37,7 +37,9 @@ request while it is pending. Never write medical details; the category "Medical"
 
 ## People Partners
 
-- *Reports* is filtered to your departments. Use *Not met only* to focus on follow-ups, then *Export Excel*.
+- *Reports* is filtered to your departments. The employee list is grouped **by org chart** by default: one
+  collapsible block per manager with their direct reports and a roll-up for the whole team; switch to *Flat list*
+  for one table. Use *Not met only* to focus on follow-ups (empty teams disappear), then *Export Excel*.
 - Your *Requests* inbox contains requests already approved by the manager. Your review is the final step: approving
   updates the figures immediately.
 

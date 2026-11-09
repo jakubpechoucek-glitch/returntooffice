@@ -18,6 +18,7 @@ from rto.services.access import Principal, can_view, visible_employee_ids
 from rto.services.org import manager_chain, subordinate_ids, unit_descendants
 from rto.services.reports import (
     aggregate,
+    cluster_rows,
     employee_days,
     employee_weeks,
     employee_year,
@@ -121,21 +122,23 @@ def _report_rows(db: Session, p: Principal, m: dt.date, unit: int | None, failed
 
 @router.get("/reports")
 def reports(
-    request: Request, month: str | None = None, unit: str = "", failed: str = "",
+    request: Request, month: str | None = None, unit: str = "", failed: str = "", view: str = "org",
     p: Principal = Depends(current_principal), db: Session = Depends(get_db),
 ):
     m = parse_month(month, db)
     unit = int(unit) if unit.isdigit() else None
     failed = failed == "1"
+    view = "flat" if view == "flat" else "org"
     rows = _report_rows(db, p, m, unit, failed)
     all_rows = rows if not failed else _report_rows(db, p, m, unit, False)
+    clustered = cluster_rows(org_tree(db, p, m), rows) if view == "org" else None
     vis = visible_employee_ids(db, p, month_ref_date(m))
     units = list(db.scalars(select(OrgUnit).order_by(OrgUnit.name)))
     return render(
         request, "reports/index.html", **nav_ctx(request, db, p), month=m, months=months_with_results(db),
         rows=rows, total=(aggregate(all_rows, "all") or [None])[0], by_unit=aggregate(all_rows, "unit"),
         by_manager=aggregate(all_rows, "manager"), units=units, unit=unit, failed=failed,
-        restricted=vis is not None, week_mondays=weeks_of_month(m),
+        restricted=vis is not None, week_mondays=weeks_of_month(m), view=view, clustered=clustered,
     )
 
 

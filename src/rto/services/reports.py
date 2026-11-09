@@ -306,6 +306,57 @@ def org_tree(db: Session, p: Principal, month: dt.date) -> list[OrgNode]:
     return out
 
 
+@dataclass
+class Cluster:
+    """A manager's team in the report: direct reports' rows plus nested sub-teams."""
+
+    manager: Employee
+    depth: int
+    rows: list[EmployeeMonthRow]
+    subclusters: list[Cluster]
+    total: Aggregate
+    size: int  # report rows in this team, all levels
+
+
+@dataclass
+class ClusteredReport:
+    top_rows: list[EmployeeMonthRow]  # people at the top of the visible tree (no visible manager)
+    clusters: list[Cluster]
+    other_rows: list[EmployeeMonthRow]  # rows not placed in the tree (should normally be empty)
+
+
+def cluster_rows(tree: list[OrgNode], rows: list[EmployeeMonthRow]) -> ClusteredReport:
+    """Group report rows by the org chart. Teams without any row (after filters) are dropped."""
+    by_emp = {r.employee.id: r for r in rows}
+    placed: set[int] = set()
+
+    def sort_key(r: EmployeeMonthRow):
+        return (r.employee.last_name, r.employee.first_name)
+
+    def build(node: OrgNode, depth: int) -> Cluster | None:
+        direct = [by_emp[c.employee.id] for c in node.children if c.employee.id in by_emp]
+        subs = [x for x in (build(c, depth + 1) for c in node.children if c.children) if x is not None]
+        if not direct and not subs:
+            return None
+        placed.update(r.employee.id for r in direct)
+        total = Aggregate(str(node.employee.id), node.employee.full_name)
+        for r in direct:
+            total.add(r.result)
+        for sc in subs:
+            for k in ("headcount", "evaluated", "passed", "passed_initial", "met_weeks", "considered_weeks"):
+                setattr(total, k, getattr(total, k) + getattr(sc.total, k))
+            total.total_valid += sc.total.total_valid
+        # The sub-team manager's own row sits in this team's `direct`; the sub-team holds the people below.
+        size = len(direct) + sum(sc.size for sc in subs)
+        return Cluster(node.employee, depth, sorted(direct, key=sort_key), subs, total, size)
+
+    clusters = [c for c in (build(n, 0) for n in tree if n.children) if c is not None]
+    top = [by_emp[n.employee.id] for n in tree if n.employee.id in by_emp]
+    placed.update(r.employee.id for r in top)
+    other = [r for r in rows if r.employee.id not in placed]
+    return ClusteredReport(sorted(top, key=sort_key), clusters, sorted(other, key=sort_key))
+
+
 # --- employee detail ------------------------------------------------------------------------------
 
 

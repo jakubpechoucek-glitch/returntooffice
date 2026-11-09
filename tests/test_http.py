@@ -36,7 +36,7 @@ def test_anonymous_is_redirected_and_api_401(client):
     "path",
     ["/", "/team", "/reports", "/requests", "/requests/new", "/admin", "/admin/thresholds", "/admin/people",
      "/admin/org", "/admin/roles", "/admin/calendar", "/admin/imports", "/admin/months", "/admin/audit",
-     "/reports/export.xlsx", "/reports/export.csv", "/help", "/org", "/org?month=2026-01", "/admin/imports/samples/synthetic/masterlist_risk.csv", "/api/v1/me", "/api/v1/results/monthly?month=2026-03"],
+     "/reports/export.xlsx", "/reports/export.csv", "/help", "/reports?view=flat", "/reports?month=2026-03&failed=1", "/org", "/org?month=2026-01", "/admin/imports/samples/synthetic/masterlist_risk.csv", "/api/v1/me", "/api/v1/results/monthly?month=2026-03"],
 )
 def test_hr_admin_pages(client, path):
     login(client, "hr.admin@example.com")

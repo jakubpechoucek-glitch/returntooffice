@@ -48,14 +48,7 @@
 </div>
 {% endif %}
 
-<div class="card">
-  <div class="page-head">
-    <h2>Employees ({{ rows|length }})</h2>
-    <div class="toolbar">
-      <a class="btn small" href="/reports/export.xlsx?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}">Export Excel</a>
-      <a class="btn small" href="/reports/export.csv?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}">Export CSV</a>
-    </div>
-  </div>
+{% macro emp_table(rows) -%}
   <div class="table-wrap">
   <table>
     <thead><tr>
@@ -75,11 +68,54 @@
         <td class="num">{{ r.result.adj_adherence|pct }}</td>
         <td>{{ passed_pill(r.result.adj_passed if r.result.considered_weeks else None) }}</td>
       </tr>
-    {% else %}
-      <tr><td colspan="12" class="muted">No results for this selection.</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
+{%- endmacro %}
+
+{% macro cluster(c) -%}
+  <details class="cluster"{{ ' open' if c.depth < 1 }}>
+    <summary>
+      <span class="cluster-title">Team of <strong>{{ c.manager.full_name }}</strong>
+        <span class="muted small">{{ c.manager.position or '' }}</span></span>
+      <span class="org-team">{{ c.size }} {{ 'person' if c.size == 1 else 'people' }} · {{ c.total.passed }}/{{ c.total.evaluated }} met{% if c.total.pass_rate is not none %} ({{ c.total.pass_rate|pct }}){% endif %}</span>
+      {% if c.subclusters %}<span class="small muted">{{ c.rows|length }} direct · {{ c.subclusters|length }} sub-team{{ 's' if c.subclusters|length != 1 }}</span>{% endif %}
+    </summary>
+    <div class="cluster-body">
+      {% if c.rows %}{{ emp_table(c.rows) }}{% endif %}
+      {% for sc in c.subclusters %}{{ cluster(sc) }}{% endfor %}
+    </div>
+  </details>
+{%- endmacro %}
+
+<div class="card">
+  <div class="page-head">
+    <h2>Employees ({{ rows|length }})</h2>
+    <div class="toolbar">
+      <div class="tabs compact">
+        <a href="/reports?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}&view=org" class="{{ 'active' if view == 'org' }}">By org chart</a>
+        <a href="/reports?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}&view=flat" class="{{ 'active' if view == 'flat' }}">Flat list</a>
+      </div>
+      {% if view == 'org' %}
+      <button class="btn small" type="button" data-org-action="expand">Expand all</button>
+      <button class="btn small" type="button" data-org-action="collapse">Collapse all</button>
+      {% endif %}
+      <a class="btn small" href="/reports/export.xlsx?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}">Export Excel</a>
+      <a class="btn small" href="/reports/export.csv?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}">Export CSV</a>
+    </div>
+  </div>
+  {% if not rows %}
+    <p class="muted">No results for this selection.</p>
+  {% elif view == 'flat' %}
+    {{ emp_table(rows) }}
+  {% else %}
+    <div class="clusters">
+      {% if clustered.top_rows %}{{ emp_table(clustered.top_rows) }}{% endif %}
+      {% for c in clustered.clusters %}{{ cluster(c) }}{% endfor %}
+      {% if clustered.other_rows %}<h3>Not placed in the reporting lines</h3>{{ emp_table(clustered.other_rows) }}{% endif %}
+    </div>
+    <p class="small muted mt">Each team lists the manager's direct reports; sub-teams are nested below. Counts include everyone in the team, at all levels, after the filters above.</p>
+  {% endif %}
 </div>
 {% endblock %}

@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-org-action]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const open = btn.getAttribute("data-org-action") === "expand";
-      document.querySelectorAll(".org-tree details").forEach((d) => { d.open = open; });
+      document.querySelectorAll(".org-tree details, .clusters details").forEach((d) => { d.open = open; });
     });
   });
   const search = document.querySelector("#org-search");

@@ -275,3 +275,34 @@ def test_org_tree_scopes_and_counts(loaded):
     db.flush()
     top = org_tree(db, P(db, nina), MAR)
     assert top[0].employee.id == nina.id and top[0].size == 13 and top[0].result is None
+
+
+def test_report_clusters_follow_org_chart(loaded):
+    from rto.services.reports import cluster_rows, month_rows, org_tree
+
+    db = loaded
+    nina = db.scalar(select(Employee).where(Employee.email == "nina.cabrera@example.com"))
+    db.add(RoleAssignment(employee_id=nina.id, role=Role.HR_ADMIN))
+    db.flush()
+    p = P(db, nina)
+    rows = month_rows(db, p, MAR)
+    rep = cluster_rows(org_tree(db, p, MAR), rows)
+    assert rep.other_rows == [] and rep.top_rows == []
+    (team_nina,) = rep.clusters
+    assert team_nina.size == 13 and [r.employee.employee_number for r in team_nina.rows] == ["900013"]
+    (team_marco,) = team_nina.subclusters
+    names = {sc.manager.employee_number: sc for sc in team_marco.subclusters}
+    assert set(names) == {"900003", "900004"}  # Carlo and Daphne lead sub-teams
+    assert names["900004"].size == 5
+    # every row appears exactly once
+    def all_rows(c):
+        yield from c.rows
+        for sc in c.subclusters:
+            yield from all_rows(sc)
+    assert sorted(r.employee.id for r in all_rows(team_nina)) == sorted(r.employee.id for r in rows)
+    assert team_nina.total.evaluated == 13
+
+    # filtered to "not met" only: empty teams disappear
+    failed = month_rows(db, p, MAR, only_failed=True)
+    rep2 = cluster_rows(org_tree(db, p, MAR), failed)
+    assert sum(1 for _ in all_rows(rep2.clusters[0])) == len(failed) == 2
