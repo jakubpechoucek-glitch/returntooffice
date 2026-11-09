@@ -33,7 +33,21 @@ def week_label(d: dt.date) -> str:
 
 
 TEMPLATES.env.filters.update(pct=pct, num=num, month_label=month_label, week_label=week_label)
-TEMPLATES.env.globals.update(version=__version__)
+
+
+def _static_hash() -> str:
+    """Content hash of the static assets: browsers re-download them whenever they change."""
+    import hashlib
+
+    h = hashlib.sha256()
+    static = pathlib.Path(__file__).parent / "static"
+    for f in sorted(static.glob("*")):
+        h.update(f.name.encode())
+        h.update(f.read_bytes())
+    return h.hexdigest()[:12]
+
+
+TEMPLATES.env.globals.update(version=__version__, static_version=_static_hash())
 
 
 def render(request: Request, name: str, status_code: int = 200, **ctx: Any):
