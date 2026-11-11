@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Audit log{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Audit log</h1></div>
+  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('log', 20) }}</span>Audit log</h1></div>
   <form method="get" class="toolbar">
     <div><label>Entity</label><input name="entity" value="{{ entity }}" placeholder="employee, request, ..."></div>
     <div><label>Entity id</label><input name="entity_id" value="{{ entity_id }}"></div>

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% from "macros.html" import passed_pill, week_cell, month_select %}
+{% from "icons.html" import icon %}
+{% from "macros.html" import passed_pill, week_cell, month_select, adh %}
 {% block title %}Monthly onsite report{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Monthly onsite report · {{ month|month_label }}</h1>
+    <h1><span class="page-icon">{{ icon('chart', 20) }}</span>Monthly onsite report · {{ month|month_label }}</h1>
     <div class="muted">{% if restricted %}Showing only the people you are allowed to see.{% else %}Company-wide view.{% endif %}
       Final figures include approved disputes.</div>
   </div>
@@ -24,25 +25,26 @@
 
 {% if total %}
 <div class="grid cols-4">
-  <div class="card kpi"><div class="label">People evaluated</div><div class="value">{{ total.evaluated }}</div><div class="small muted">{{ total.headcount }} in scope</div></div>
-  <div class="card kpi"><div class="label">Met monthly threshold</div><div class="value">{{ total.pass_rate|pct }}</div><div class="small muted">{{ total.passed }} people (initial: {{ total.passed_initial }})</div></div>
-  <div class="card kpi"><div class="label">Weeks met</div><div class="value">{{ (total.met_weeks / total.considered_weeks if total.considered_weeks else None)|pct }}</div><div class="small muted">{{ total.met_weeks }} of {{ total.considered_weeks }} considered weeks</div></div>
-  <div class="card kpi"><div class="label">Avg. valid days / week</div><div class="value">{{ '%.2f'|format(total.avg_days or 0) }}</div><div class="small muted">onsite + leave + OB</div></div>
+  <div class="card kpi info"><div class="label">{{ icon('users', 14) }} People evaluated</div><div class="value">{{ total.evaluated }}</div><div class="small muted">{{ total.headcount }} in scope</div></div>
+  <div class="card kpi {{ 'ok' if (total.pass_rate or 0) >= 0.75 else 'bad' }}"><div class="label">{{ icon('check', 14) }} Met monthly target</div><div class="value">{{ total.pass_rate|pct }}</div>
+    <progress class="wide {{ 'ok' if (total.pass_rate or 0) >= 0.75 else 'bad' }}" max="100" value="{{ ((total.pass_rate or 0) * 100)|round|int }}"></progress><div class="small muted">{{ total.passed }} people (initial: {{ total.passed_initial }})</div></div>
+  <div class="card kpi"><div class="label">{{ icon('calendar', 14) }} Weeks met</div><div class="value">{{ (total.met_weeks / total.considered_weeks if total.considered_weeks else None)|pct }}</div><div class="small muted">{{ total.met_weeks }} of {{ total.considered_weeks }} considered weeks</div></div>
+  <div class="card kpi"><div class="label">{{ icon('building', 14) }} Avg. valid days / week</div><div class="value">{{ '%.2f'|format(total.avg_days or 0) }}</div><div class="small muted">onsite + leave + OB</div></div>
 </div>
 
 <div class="grid cols-2">
   <div class="card table-wrap">
-    <h2>By department</h2>
+    <h2>{{ icon('building') }} By department</h2>
     <table>
       <thead><tr><th>Department</th><th class="num">People</th><th class="num">Met</th><th class="num">Rate</th><th class="num">Avg days</th></tr></thead>
-      <tbody>{% for a in by_unit %}<tr><td>{{ a.label }}</td><td class="num">{{ a.evaluated }}</td><td class="num">{{ a.passed }}</td><td class="num">{{ a.pass_rate|pct }}</td><td class="num">{{ '%.2f'|format(a.avg_days or 0) }}</td></tr>{% endfor %}</tbody>
+      <tbody>{% for a in by_unit %}<tr><td>{{ a.label }}</td><td class="num">{{ a.evaluated }}</td><td class="num">{{ a.passed }}</td><td class="num">{{ adh(a.pass_rate, (a.pass_rate or 0) >= 0.75 if a.pass_rate is not none else none) }}</td><td class="num">{{ '%.2f'|format(a.avg_days or 0) }}</td></tr>{% endfor %}</tbody>
     </table>
   </div>
   <div class="card table-wrap">
-    <h2>By manager</h2>
+    <h2>{{ icon('users') }} By manager</h2>
     <table>
       <thead><tr><th>Manager</th><th class="num">People</th><th class="num">Met</th><th class="num">Rate</th></tr></thead>
-      <tbody>{% for a in by_manager %}<tr><td>{% if a.key != 'None' %}<a href="/team?root={{ a.key }}&month={{ month.strftime('%Y-%m') }}">{{ a.label }}</a>{% else %}{{ a.label }}{% endif %}</td><td class="num">{{ a.evaluated }}</td><td class="num">{{ a.passed }}</td><td class="num">{{ a.pass_rate|pct }}</td></tr>{% endfor %}</tbody>
+      <tbody>{% for a in by_manager %}<tr><td>{% if a.key != 'None' %}<a href="/team?root={{ a.key }}&month={{ month.strftime('%Y-%m') }}">{{ a.label }}</a>{% else %}{{ a.label }}{% endif %}</td><td class="num">{{ a.evaluated }}</td><td class="num">{{ a.passed }}</td><td class="num">{{ adh(a.pass_rate, (a.pass_rate or 0) >= 0.75 if a.pass_rate is not none else none) }}</td></tr>{% endfor %}</tbody>
     </table>
   </div>
 </div>
@@ -65,7 +67,7 @@
         <td class="num">{{ r.result.commitment_days|num }}</td>
         {% for m in week_mondays %}<td class="num">{% for w in r.weeks if w.monday == m %}{{ week_cell(w) }}{% endfor %}</td>{% endfor %}
         <td class="num">{{ r.result.adherence|pct }}</td>
-        <td class="num">{{ r.result.adj_adherence|pct }}</td>
+        <td class="num">{{ adh(r.result.adj_adherence, r.result.adj_passed if r.result.considered_weeks else none) }}</td>
         <td>{{ passed_pill(r.result.adj_passed if r.result.considered_weeks else None) }}</td>
       </tr>
     {% endfor %}
@@ -91,7 +93,7 @@
 
 <div class="card">
   <div class="page-head">
-    <h2>Employees ({{ rows|length }})</h2>
+    <h2>{{ icon('person') }} Employees ({{ rows|length }})</h2>
     <div class="toolbar">
       <div class="tabs compact">
         <a href="/reports?month={{ month.strftime('%Y-%m') }}{% if unit %}&unit={{ unit }}{% endif %}{% if failed %}&failed=1{% endif %}&view=org" class="{{ 'active' if view == 'org' }}">By org chart</a>

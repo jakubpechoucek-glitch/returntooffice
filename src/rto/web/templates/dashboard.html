@@ -1,49 +1,104 @@
 {% extends "base.html" %}
-{% from "macros.html" import passed_pill, week_cell, status_pill, type_label %}
+{% from "macros.html" import passed_pill, week_cell, status_pill, type_label, adh %}
+{% from "icons.html" import icon %}
 {% block title %}My dashboard{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
+    <div class="eyebrow">My dashboard</div>
     <h1>Hello, {{ user.employee.first_name or user.employee.full_name }}</h1>
-    <div class="muted">Work onsite compliance{% if latest %} · latest data: {{ latest|month_label }}{% endif %}</div>
-  </div>
-  <div class="toolbar">
-    <a class="btn primary" href="/requests/new?type=EXEMPTION">File an exemption</a>
-    <a class="btn" href="/requests/new?type=DISPUTE">Raise a dispute</a>
+    <div class="muted">Your work-onsite compliance{% if latest %} · latest data: <strong>{{ latest|month_label }}</strong>{% endif %}</div>
   </div>
 </div>
 
+{# ---- headline: how did I do in the latest month ---- #}
 {% if me %}
+  {% set cur = (me.months|selectattr('month', 'equalto', latest)|list or [none])[0] if latest else none %}
+  {% if cur and cur.considered_weeks %}
+  <section class="hero {{ 'ok' if cur.adj_passed else 'bad' }}">
+    <div class="hero-icon">{{ icon('check' if cur.adj_passed else 'alert', 28) }}</div>
+    <div>
+      <div class="hero-title">{{ latest|month_label }}: {{ 'commitment met' if cur.adj_passed else 'commitment not met' }}</div>
+      <div class="hero-sub">{{ cur.adj_met_weeks }} of {{ cur.considered_weeks }} weeks met · you commit to {{ cur.commitment_days|num }} onsite days a week ·
+        the target is {{ cur.threshold_pct|num }}% of weeks</div>
+      <div class="hero-weeks">{% for w in weeks %}{{ week_cell(w) }}{% endfor %}</div>
+    </div>
+    <div class="hero-figure"><div class="big">{{ cur.adj_adherence|pct }}</div><div class="small muted">weeks met</div></div>
+  </section>
+  {% else %}
+  <section class="hero neutral">
+    <div class="hero-icon">{{ icon('clock', 28) }}</div>
+    <div><div class="hero-title">No results yet{% if latest %} for {{ latest|month_label }}{% endif %}</div>
+      <div class="hero-sub">Results appear once HR loads the attendance data for the month.</div></div>
+    <div></div>
+  </section>
+  {% endif %}
+{% else %}
+  <section class="hero neutral">
+    <div class="hero-icon">{{ icon('person', 28) }}</div>
+    <div><div class="hero-title">You are not tracked by the onsite report</div>
+      <div class="hero-sub">{% if is_manager %}Use My team and the Org chart to follow your organisation.{% elif user.has('HR_ADMIN','HR_ANALYTICS','PEOPLE_PARTNER','EXECUTIVE','AUDITOR') %}Use the Monthly report to see the people in your scope.{% else %}Nothing to do here.{% endif %}</div></div>
+    <div></div>
+  </section>
+{% endif %}
+
+{# ---- what can I do next ---- #}
+<div class="actions">
+  {% if inbox_count %}
+  <a class="action attention" href="/requests"><span class="a-icon">{{ icon('inbox', 20) }}</span>
+    <span><strong>{{ inbox_count }} request{{ 's' if inbox_count != 1 }} to decide</strong><small>Approve or reject exemptions and disputes</small></span></a>
+  {% endif %}
+  {% if me %}
+  <a class="action primary" href="/requests/new?type=EXEMPTION"><span class="a-icon">{{ icon('calendar', 20) }}</span>
+    <span><strong>File an exemption</strong><small>Can't come in for specific weeks</small></span></a>
+  <a class="action" href="/requests/new?type=DISPUTE"><span class="a-icon">{{ icon('flag', 20) }}</span>
+    <span><strong>Raise a dispute</strong><small>A day is missing or wrong</small></span></a>
+  {% endif %}
+  {% if is_manager %}
+  <a class="action" href="/team"><span class="a-icon">{{ icon('users', 20) }}</span>
+    <span><strong>My team</strong><small>Direct reports and teams below</small></span></a>
+  <a class="action" href="/org"><span class="a-icon">{{ icon('tree', 20) }}</span>
+    <span><strong>Org chart</strong><small>Your whole reporting line</small></span></a>
+  {% elif user.has('HR_ADMIN','HR_ANALYTICS','PEOPLE_PARTNER','EXECUTIVE','AUDITOR') %}
+  <a class="action" href="/reports"><span class="a-icon">{{ icon('chart', 20) }}</span>
+    <span><strong>Monthly report</strong><small>Results for your scope</small></span></a>
+  {% endif %}
+  <a class="action" href="/help"><span class="a-icon">{{ icon('help', 20) }}</span>
+    <span><strong>How it works</strong><small>Rules and a guide for your role</small></span></a>
+</div>
+
+{% if me %}
+<div class="section-title">{{ icon('calendar', 16) }} {{ year }} at a glance</div>
 <div class="grid cols-4">
-  <div class="card kpi">
-    <div class="label">Annual compliance {{ year }}</div>
+  <div class="card kpi {{ 'ok' if me.annual_passed else 'info' }}">
+    <div class="label">{{ icon('target', 14) }} Annual compliance</div>
     <div class="value">{{ me.annual_rate|pct }}</div>
-    <div class="small muted">{{ me.adhering_months }} adhering month(s) of 12 · good standing at {{ me.annual_threshold|num }}%</div>
+    <progress class="wide {{ 'ok' if me.annual_passed }}" max="100" value="{{ (me.annual_rate * 100)|round|int }}"></progress>
+    <div class="small muted">{{ me.adhering_months }} of 12 months met · good standing at {{ me.annual_threshold|num }}%</div>
   </div>
-  <div class="card kpi">
-    <div class="label">Year to date</div>
+  <div class="card kpi {{ 'ok' if (me.ytd_rate or 0) * 100 >= me.annual_threshold else 'bad' }}">
+    <div class="label">{{ icon('chart', 14) }} Year to date</div>
     <div class="value">{{ me.ytd_rate|pct }}</div>
-    <div class="small muted">{{ me.adhering_months }} of {{ me.evaluated_months }} evaluated month(s)</div>
+    <div class="small muted">{{ me.adhering_months }} of {{ me.evaluated_months }} evaluated month{{ 's' if me.evaluated_months != 1 }} met</div>
   </div>
-  <div class="card kpi">
-    <div class="label">Weekly commitment</div>
-    <div class="value">{{ (me.months[-1].commitment_days if me.months else None)|num }} days</div>
+  <div class="card kpi info">
+    <div class="label">{{ icon('person', 14) }} Weekly commitment</div>
+    <div class="value">{{ (me.months[-1].commitment_days if me.months else None)|num }} <span class="small muted">days</span></div>
     <div class="small muted">{% if me.assignment and me.assignment.org_unit %}{{ me.assignment.org_unit.name }}{% endif %}</div>
   </div>
   <div class="card kpi">
-    <div class="label">Monthly threshold</div>
+    <div class="label">{{ icon('flag', 14) }} Monthly target</div>
     <div class="value">{{ me.monthly_threshold|num }}%</div>
-    <div class="small muted">of considered weeks must be met · set by {{ me.threshold_origin.monthly_pass_pct }}</div>
+    <div class="small muted">of weeks met · set by {{ me.threshold_origin.monthly_pass_pct }}</div>
   </div>
 </div>
 
 <div class="card">
-  <h2>{{ year }} by month <span class="small muted">(after disputes)</span></h2>
   {% set by_month = {} %}{% for m in me.months %}{% set _ = by_month.update({m.month.month: m}) %}{% endfor %}
   <div class="months">
     {% for i in range(1, 13) %}
       {% set m = by_month.get(i) %}
-      <a class="month-tile {% if m and m.considered_weeks %}{{ 'ok' if m.adj_passed else 'bad' }}{% endif %}"
+      <a class="month-tile {% if m and m.considered_weeks %}{{ 'ok' if m.adj_passed else 'bad' }}{% endif %}{{ ' current' if latest and latest.year == year and latest.month == i }}"
          href="/employees/{{ user.id }}?month={{ year }}-{{ '%02d' % i }}">
         <div class="m">{{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i-1] }}</div>
         <div class="v">{{ (m.adj_adherence if m else None)|pct }}</div>
@@ -51,40 +106,22 @@
       </a>
     {% endfor %}
   </div>
+  <div class="legend mt"><span><span class="pill ok">{{ icon('check', 13) }}met</span></span><span><span class="pill bad">{{ icon('x', 13) }}not met</span></span>
+    <span>Click a month for the week-by-week and day-by-day view.</span></div>
 </div>
-
-{% if weeks %}
-<div class="card">
-  <h2>{{ latest|month_label }} · weekly view</h2>
-  <table>
-    <thead><tr><th>Week</th><th class="num">Valid days</th><th class="num">Commitment</th><th>Result</th><th>After dispute</th><th>Note</th></tr></thead>
-    <tbody>
-    {% for w in weeks %}
-      <tr>
-        <td class="nowrap">{{ w.monday|week_label }}</td>
-        <td class="num">{{ w.valid|num }}</td>
-        <td class="num">{{ w.commitment|num }}</td>
-        <td>{% if w.considered %}{{ passed_pill(w.met) }}{% else %}<span class="pill neutral">Not counted</span>{% endif %}</td>
-        <td>{{ week_cell(w) }}</td>
-        <td class="small muted">{{ w.reason or '' }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  <p class="small muted mt"><a href="/employees/{{ user.id }}?month={{ latest.strftime('%Y-%m') }}">See day-by-day details →</a></p>
-</div>
-{% endif %}
-{% else %}
-<div class="card"><p class="muted">You are not tracked by the onsite report{% if user.has('HR_ADMIN','HR_ANALYTICS','PEOPLE_PARTNER','EXECUTIVE','AUDITOR') %} — use <a href="/reports">Reports</a> to see the people in your scope{% endif %}.</p></div>
 {% endif %}
 
 <div class="grid cols-2">
   {% if team_nodes %}
   <div class="card">
-    <h2>My team · {{ latest|month_label }}</h2>
+    <h2>{{ icon('users') }} My team · {{ latest|month_label }}</h2>
     {% if team_total %}
-    <p><strong>{{ team_total.passed }}</strong> of {{ team_total.evaluated }} people met the monthly threshold
-      ({{ team_total.pass_rate|pct }}), average {{ '%.1f'|format(team_total.avg_days or 0) }} valid days per week.</p>
+    <div class="kpi {{ 'ok' if (team_total.pass_rate or 0) >= 0.75 else 'bad' }} card flat">
+      <div class="label">People who met the month</div>
+      <div class="value">{{ team_total.passed }} / {{ team_total.evaluated }}</div>
+      <progress class="wide {{ 'ok' if (team_total.pass_rate or 0) >= 0.75 else 'bad' }}" max="100" value="{{ ((team_total.pass_rate or 0) * 100)|round|int }}"></progress>
+      <div class="small muted">{{ team_total.pass_rate|pct }} of your organisation · average {{ '%.1f'|format(team_total.avg_days or 0) }} valid days a week</div>
+    </div>
     {% endif %}
     <table>
       <thead><tr><th>Direct report</th><th class="num">Adherence</th><th>Month</th><th class="num">Their org</th></tr></thead>
@@ -92,18 +129,17 @@
       {% for n in team_nodes %}
         <tr>
           <td><a href="/employees/{{ n.employee.id }}?month={{ latest.strftime('%Y-%m') }}">{{ n.employee.full_name }}</a></td>
-          <td class="num">{{ (n.result.adj_adherence if n.result else None)|pct }}</td>
+          <td class="num">{{ adh(n.result.adj_adherence if n.result else None, n.result.adj_passed if n.result and n.result.considered_weeks else None) }}</td>
           <td>{{ passed_pill(n.result.adj_passed if n.result and n.result.considered_weeks else None) }}</td>
-          <td class="num">{% if n.is_manager %}<a href="/team?root={{ n.employee.id }}&month={{ latest.strftime('%Y-%m') }}">{{ n.subtree.passed }}/{{ n.subtree.evaluated }}</a>{% endif %}</td>
+          <td class="num">{% if n.is_manager %}<a href="/team?root={{ n.employee.id }}&month={{ latest.strftime('%Y-%m') }}">{{ n.subtree.passed }}/{{ n.subtree.evaluated }} met</a>{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
-    <p class="mt"><a href="/team">Open team view →</a></p>
   </div>
   {% endif %}
   <div class="card">
-    <h2>My recent requests</h2>
+    <h2>{{ icon('inbox') }} My recent requests</h2>
     {% if requests %}
     <table>
       <thead><tr><th>#</th><th>Type</th><th>Period</th><th>Status</th></tr></thead>
@@ -118,8 +154,9 @@
       {% endfor %}
       </tbody>
     </table>
-    {% else %}<p class="muted">No requests yet.</p>{% endif %}
-    {% if inbox_count %}<p class="mt"><a class="btn" href="/requests">{{ inbox_count }} request(s) wait for your decision</a></p>{% endif %}
+    {% else %}
+    <div class="empty">{{ icon('inbox', 28) }}<div>No requests yet.</div></div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

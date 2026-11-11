@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Organisation units{% endblock %}
 {% block content %}
-<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Organisation units</h1></div></div>
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('building', 20) }}</span>Organisation units</h1></div></div>
 <div class="grid cols-2">
   <div class="card table-wrap">
     <table>

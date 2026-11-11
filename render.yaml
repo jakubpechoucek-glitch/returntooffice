@@ -9,7 +9,7 @@ services:
     branch: claude/laughing-ride-drbvso
     buildCommand: pip install .
     startCommand: >-
-      rto migrate && rto seed-demo --if-empty &&
+      rto migrate && rto seed-demo --if-empty && rto recompute &&
       gunicorn rto.main:app -k uvicorn_worker.UvicornWorker -w 2 -b 0.0.0.0:$PORT
       --timeout 120 --forwarded-allow-ips='*'
     healthCheckPath: /healthz

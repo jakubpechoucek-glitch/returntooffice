@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}New request{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>New request</h1>
+<div class="page-head"><div><h1><span class="page-icon">{{ icon('plus', 20) }}</span>New request</h1>
   <div class="muted">Your request is routed to the approvers automatically. Once approved, the compliance figures are recalculated.</div></div></div>
 
 <form method="post" action="/requests" class="card">

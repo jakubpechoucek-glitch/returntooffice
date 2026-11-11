@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% from "macros.html" import month_select %}
 {% block title %}Org chart{% endblock %}
 
@@ -37,7 +38,7 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>Org chart</h1>
+    <h1><span class="page-icon">{{ icon('tree', 20) }}</span>Org chart</h1>
     <div class="muted">Reporting lines as of {{ month|month_label }} · {{ total }} people you can see · percentages are monthly adherence after disputes.</div>
   </div>
   <form method="get" class="toolbar">

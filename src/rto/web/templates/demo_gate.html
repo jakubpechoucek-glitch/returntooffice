@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Demo access{% endblock %}
 {% block content %}
 <div class="login-wrap">
   <form method="post" action="/demo-gate" class="card">
-    <h1>WOS Tracker demo</h1>
+    <h1><span class="page-icon">{{ icon('shield', 20) }}</span>WOS Tracker demo</h1>
     <p class="muted">This is a demo with fictional data. Enter the demo password you received.</p>
     {% if error %}<div class="flash error">Wrong password.</div>{% endif %}
     <input type="hidden" name="csrf_token" value="{{ csrf }}">

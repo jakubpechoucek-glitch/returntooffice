@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}{{ emp.full_name }} · Admin{% endblock %}
 {% block content %}
 <div class="page-head">
   <div><div class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/people">People</a> ›</div>
-    <h1>{{ emp.full_name }}</h1>
+    <h1><span class="page-icon">{{ icon('person', 20) }}</span>{{ emp.full_name }}</h1>
     <div class="muted">#{{ emp.employee_number }} · {{ emp.email }} · {{ emp.position or '' }}{% if emp.ceo_level %} · CEO-{{ emp.ceo_level }}{% endif %}</div></div>
   <a class="btn" href="/employees/{{ emp.id }}">Compliance view</a>
 </div>

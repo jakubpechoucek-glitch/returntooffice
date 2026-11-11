@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Sign in{% endblock %}
 {% block content %}
 <div class="login-wrap">
   <div class="card">
-    <h1>Sign in (development mode)</h1>
+    <h1><span class="page-icon">{{ icon('person', 20) }}</span>Sign in (development mode)</h1>
     <p class="muted">In production, users sign in with their Microsoft Entra ID account (single sign-on).
       This page lets you impersonate any person to try out roles and visibility. It is disabled when
       <code>RTO_AUTH_MODE=oidc</code> and refused at start-up in production.</p>

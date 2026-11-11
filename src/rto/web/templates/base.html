@@ -1,4 +1,5 @@
 <!doctype html>
+{% from "icons.html" import icon %}
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -7,35 +8,80 @@
   <link rel="stylesheet" href="/static/app.css?v={{ static_version }}">
   <script src="/static/app.js?v={{ static_version }}" defer></script>
 </head>
-<body>
-<header class="top">
-  <div class="top-inner">
-    <a class="brand" href="/"><span class="mark"></span>WOS Tracker</a>
-    {% if user %}
-    {% set path = request.url.path %}
-    <nav class="main">
-      <a href="/" class="{{ 'active' if path == '/' }}">My dashboard</a>
-      {% if is_manager or user.sees_everything %}<a href="/team" class="{{ 'active' if path.startswith('/team') }}">My team</a>{% endif %}
-      {% if is_manager or user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR', 'PEOPLE_PARTNER', 'EXECUTIVE') %}<a href="/org" class="{{ 'active' if path.startswith('/org') }}">Org chart</a>{% endif %}
-      <a href="/reports" class="{{ 'active' if path.startswith('/reports') }}">Reports</a>
-      <a href="/requests" class="{{ 'active' if path.startswith('/requests') }}">Requests {% if inbox_count %}<span class="badge">{{ inbox_count }}</span>{% endif %}</a>
-      {% if user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR') %}<a href="/admin" class="{{ 'active' if path.startswith('/admin') }}">Admin</a>{% endif %}
-      <a href="/help" class="{{ 'active' if path.startswith('/help') }}">Help</a>
-    </nav>
-    <div class="user-box">
-      {% if environment != 'production' %}<span class="env">{{ environment|upper }}</span>{% endif %}
-      <span class="name">{{ user.employee.full_name }}</span>
-      <form class="inline" method="post" action="/logout">
-        <input type="hidden" name="csrf_token" value="{{ csrf }}">
-        <button class="btn small" type="submit">Sign out</button>
-      </form>
+<body class="{{ 'with-shell' if user else 'no-shell' }}">
+{% if user %}
+{% set path = request.url.path %}
+{% macro nav_item(href, label, ic, active, badge=0) -%}
+  <a href="{{ href }}" class="nav-item{{ ' active' if active }}">{{ icon(ic) }}<span>{{ label }}</span>{% if badge %}<span class="badge">{{ badge }}</span>{% endif %}</a>
+{%- endmacro %}
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Open menu">
+<aside class="sidebar">
+  <a class="brand" href="/">
+    <span class="brand-mark">{{ icon('building', 18) }}</span>
+    <span class="brand-text"><strong>WOS Tracker</strong><small>Work onsite compliance</small></span>
+  </a>
+
+  <nav class="nav">
+    <div class="nav-group">
+      <div class="nav-label">My work</div>
+      {{ nav_item('/', 'Dashboard', 'home', path == '/') }}
+      {{ nav_item('/requests', 'Requests', 'inbox', path.startswith('/requests'), inbox_count) }}
+    </div>
+    {% if is_manager or user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR', 'PEOPLE_PARTNER', 'EXECUTIVE') %}
+    <div class="nav-group">
+      <div class="nav-label">Team</div>
+      {% if is_manager or user.sees_everything %}{{ nav_item('/team', 'My team', 'users', path.startswith('/team')) }}{% endif %}
+      {{ nav_item('/org', 'Org chart', 'tree', path.startswith('/org')) }}
     </div>
     {% endif %}
+    <div class="nav-group">
+      <div class="nav-label">Insights</div>
+      {{ nav_item('/reports', 'Monthly report', 'chart', path.startswith('/reports')) }}
+    </div>
+    {% if user.has('HR_ADMIN', 'HR_ANALYTICS', 'AUDITOR') %}
+    <div class="nav-group">
+      <div class="nav-label">Administration</div>
+      {{ nav_item('/admin', 'Overview', 'settings', path == '/admin') }}
+      {% if user.can_manage_data %}
+      {{ nav_item('/admin/imports', 'Imports', 'upload', path.startswith('/admin/imports')) }}
+      {{ nav_item('/admin/months', 'Report months', 'months', path.startswith('/admin/months')) }}
+      {{ nav_item('/admin/people', 'People & managers', 'person', path.startswith('/admin/people')) }}
+      {% endif %}
+      {{ nav_item('/admin/thresholds', 'Thresholds', 'target', path.startswith('/admin/thresholds')) }}
+      {{ nav_item('/admin/calendar', 'Calendar', 'calendar', path.startswith('/admin/calendar')) }}
+    </div>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-foot">
+    {{ nav_item('/help', 'Help', 'help', path.startswith('/help')) }}
+    <div class="me">
+      <span class="avatar">{{ (user.employee.first_name[:1] ~ user.employee.last_name[:1])|upper or '?' }}</span>
+      <span class="me-text">
+        <strong>{{ user.employee.full_name }}</strong>
+        <small>{% set rl = [] %}{% for r in user.roles %}{% set _ = rl.append(r.value|replace('_', ' ')|title) %}{% endfor %}{% if is_manager %}{% set _ = rl.append('Manager') %}{% endif %}{{ rl|join(' · ') or 'Employee' }}</small>
+      </span>
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <button class="icon-btn" type="submit" title="Sign out" aria-label="Sign out">{{ icon('logout') }}</button>
+      </form>
+    </div>
   </div>
-</header>
-<main>
-  {% for f in flashes or [] %}<div class="flash {{ f.kind }}">{{ f.message }}</div>{% endfor %}
-  {% block content %}{% endblock %}
-</main>
+</aside>
+<label for="nav-toggle" class="nav-scrim" aria-hidden="true"></label>
+{% endif %}
+
+<div class="main-col">
+  <header class="topbar">
+    {% if user %}<label for="nav-toggle" class="icon-btn menu-btn" title="Menu">{{ icon('menu', 22) }}</label>{% endif %}
+    <a class="topbar-brand" href="/">WOS Tracker</a>
+    <span class="grow"></span>
+    {% if environment != 'production' %}<span class="env" title="Not the production system">{{ environment|upper }} · demo data</span>{% endif %}
+  </header>
+  <main>
+    {% for f in flashes or [] %}<div class="flash {{ f.kind }}">{{ icon('check' if f.kind == 'success' else ('alert' if f.kind == 'error' else 'help')) }}<span>{{ f.message }}</span></div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
 </body>
 </html>

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% from "macros.html" import status_pill %}
 {% block title %}Report months{% endblock %}
 {% block content %}
-<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Report months</h1>
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('months', 20) }}</span>Report months</h1>
   <div class="muted">Open → Published (initial report released, review and dispute window) → Finalized (locked for ExCo).</div></div></div>
 <div class="card table-wrap">
   <table>

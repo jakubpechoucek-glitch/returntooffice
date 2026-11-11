@@ -132,3 +132,13 @@ def test_sample_download_is_whitelisted(client):
     login(client, "hazel.ramos@example.com")
     assert client.get("/admin/imports/samples/synthetic/masterlist_risk.csv").status_code == 403
     assert client.get("/help").status_code == 200
+
+
+def test_untracked_exco_has_no_results(client, db):
+    from sqlalchemy import select
+
+    from rto.models import Employee, MonthlyResult
+
+    paolo = db.scalar(select(Employee).where(Employee.email == "paolo.reyes@example.com"))
+    assert paolo.in_scope is False
+    assert db.scalar(select(MonthlyResult).where(MonthlyResult.employee_id == paolo.id)) is None

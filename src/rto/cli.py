@@ -76,24 +76,31 @@ def cmd_import(a: argparse.Namespace) -> None:
 
 
 def cmd_recompute(a: argparse.Namespace) -> None:
+    """Recompute open months. Default: every month that already has results (never creates new months)."""
     from rto.domain.calendar import add_months
-    from rto.models import MonthlyResult
     from rto.services.compute import month_status, recompute_month
+    from rto.services.reports import months_with_results
 
     with session_scope() as db:
-        start = _month(a.from_) if a.from_ else db.scalar(select(func.min(MonthlyResult.month)))
-        end = _month(a.to) if a.to else dt.date.today().replace(day=1)
-        if start is None:
+        if a.from_ or a.to:
+            start = _month(a.from_) if a.from_ else min(months_with_results(db), default=None)
+            end = _month(a.to) if a.to else dt.date.today().replace(day=1)
+            months = []
+            m = start
+            while m is not None and m <= end:
+                months.append(m)
+                m = add_months(m, 1)
+        else:
+            months = sorted(months_with_results(db))
+        if not months:
             print("nothing to recompute")
             return
-        m = start
-        while m <= end:
+        for m in months:
             if month_status(db, m).value == "FINALIZED":
                 print(f"{m:%Y-%m}: finalized, skipped")
-            else:
-                s = recompute_month(db, m)
-                print(f"{m:%Y-%m}: {s.employees} employees, {s.evaluated} evaluated, {s.passed} passed")
-            m = add_months(m, 1)
+                continue
+            s = recompute_month(db, m)
+            print(f"{m:%Y-%m}: {s.employees} employees, {s.evaluated} evaluated, {s.passed} passed")
 
 
 def cmd_grant(a: argparse.Namespace) -> None:

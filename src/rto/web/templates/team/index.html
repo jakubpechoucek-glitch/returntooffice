@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% from "macros.html" import passed_pill, week_cell, month_select %}
+{% from "icons.html" import icon %}
+{% from "macros.html" import passed_pill, week_cell, month_select, adh %}
 {% block title %}Team{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -8,7 +9,7 @@
       {% for t in trail %}<a href="/team?root={{ t.id }}&month={{ month.strftime('%Y-%m') }}">{{ t.full_name }}</a> › {% endfor %}
       {{ root.full_name }}
     </div>
-    <h1>Team of {{ root.full_name }}</h1>
+    <h1><span class="page-icon">{{ icon('users', 20) }}</span>Team of {{ root.full_name }}</h1>
     <div class="muted">Direct reports, with the aggregate of everyone below each manager. Reporting lines as of {{ month|month_label }}.</div>
   </div>
   <form method="get" class="toolbar">
@@ -37,7 +38,7 @@
         {% for m in week_mondays %}
           <td class="num">{% if row %}{% for w in row.weeks if w.monday == m %}{{ week_cell(w) }}{% endfor %}{% endif %}</td>
         {% endfor %}
-        <td class="num">{{ (n.result.adj_adherence if n.result else None)|pct }}</td>
+        <td class="num">{{ adh(n.result.adj_adherence if n.result else None, n.result.adj_passed if n.result and n.result.considered_weeks else None) }}</td>
         <td>{{ passed_pill(n.result.adj_passed if n.result and n.result.considered_weeks else None) }}{% if not n.employee.in_scope %} <span class="pill neutral">not tracked</span>{% endif %}</td>
         <td class="num">
           {% if n.is_manager %}

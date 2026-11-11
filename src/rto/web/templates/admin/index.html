@@ -1,34 +1,53 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
+{% from "macros.html" import page_title %}
 {% block title %}Administration{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Administration</h1><div class="muted">Configuration and data operations for HR. Every change is recorded in the audit log.</div></div></div>
+<div class="page-head"><div>
+  {{ page_title('Administration', 'settings', 'HR tools') }}
+  <div class="muted">Configuration and data operations. Every change is recorded in the audit log.</div>
+</div></div>
+
 <div class="grid cols-4">
-  <div class="card kpi"><div class="label">Tracked employees</div><div class="value">{{ counts.employees }}</div></div>
-  <div class="card kpi"><div class="label">Organisation units</div><div class="value">{{ counts.units }}</div></div>
-  <div class="card kpi"><div class="label">Imports</div><div class="value">{{ counts.imports }}</div></div>
-  <div class="card kpi"><div class="label">Audit entries</div><div class="value">{{ counts.audit }}</div></div>
+  <div class="card kpi info"><div class="label">{{ icon('person', 14) }} Tracked employees</div><div class="value">{{ counts.employees }}</div></div>
+  <div class="card kpi"><div class="label">{{ icon('building', 14) }} Organisation units</div><div class="value">{{ counts.units }}</div></div>
+  <div class="card kpi"><div class="label">{{ icon('upload', 14) }} Imports</div><div class="value">{{ counts.imports }}</div></div>
+  <div class="card kpi"><div class="label">{{ icon('log', 14) }} Audit entries</div><div class="value">{{ counts.audit }}</div></div>
 </div>
-<div class="grid cols-2">
-  <div class="card">
-    <h2>Policy</h2>
-    <p><a href="/admin/thresholds">Thresholds per department</a><br><span class="small muted">Monthly / annual pass %, minimum working days per counted week, default commitment. Inherited department → group → company.</span></p>
-    <p><a href="/admin/calendar">Holidays and excluded periods</a><br><span class="small muted">Holiday calendar per office, one-off waivers (typhoon, management decisions).</span></p>
-  </div>
+
+{% if user.can_manage_data %}
+<div class="section-title">{{ icon('months', 16) }} Monthly cycle</div>
+<div class="hub">
+  <a class="action primary" href="/admin/imports"><span class="a-icon">{{ icon('upload', 20) }}</span>
+    <span><strong>1 · Import data</strong><small>Masterlist, leave & OB, door / timekeeping / Wi-Fi, or the legacy report. Sample files available.</small></span></a>
+  <a class="action" href="/reports"><span class="a-icon">{{ icon('chart', 20) }}</span>
+    <span><strong>2 · Review the report</strong><small>Check the results by team before publishing.</small></span></a>
+  <a class="action" href="/admin/months"><span class="a-icon">{{ icon('months', 20) }}</span>
+    <span><strong>3 · Publish & finalize</strong><small>Open the dispute window, then lock the month for ExCo.</small></span></a>
+</div>
+{% endif %}
+
+<div class="section-title">{{ icon('settings', 16) }} Configuration</div>
+<div class="hub">
+  <a class="action" href="/admin/thresholds"><span class="a-icon">{{ icon('target', 20) }}</span>
+    <span><strong>Thresholds per department</strong><small>Monthly / annual pass %, minimum working days, default commitment, inherited down the organisation.</small></span></a>
+  <a class="action" href="/admin/calendar"><span class="a-icon">{{ icon('calendar', 20) }}</span>
+    <span><strong>Holidays & waivers</strong><small>Holiday calendar per office; typhoon and other one-off exclusions.</small></span></a>
   {% if user.can_manage_data %}
-  <div class="card">
-    <h2>People and organisation</h2>
-    <p><a href="/admin/people">People, managers and reporting lines</a><br><span class="small muted">Effective-dated changes of manager, department, office and commitment.</span></p>
-    <p><a href="/admin/org">Organisation units</a><br><span class="small muted">Department groups and departments.</span></p>
-    {% if user.is_hr_admin %}<p><a href="/admin/roles">Roles and access</a><br><span class="small muted">HR Admin, HR Analytics, People Partners (scoped), Executives (scoped), Auditors.</span></p>{% endif %}
-  </div>
-  <div class="card">
-    <h2>Data operations</h2>
-    <p><a href="/admin/imports">Imports</a><br><span class="small muted">Legacy onsite report, masterlist, door/timekeeping/Wi-Fi presence, leave and OB.</span></p>
-    <p><a href="/admin/months">Report months</a><br><span class="small muted">Recompute, publish (opens the review window), finalize (locks the month).</span></p>
-  </div>
+  <a class="action" href="/admin/people"><span class="a-icon">{{ icon('person', 20) }}</span>
+    <span><strong>People & managers</strong><small>Change a manager, department, office or commitment with an effective date.</small></span></a>
+  <a class="action" href="/org"><span class="a-icon">{{ icon('tree', 20) }}</span>
+    <span><strong>Org chart</strong><small>See the whole hierarchy and jump to edit any person.</small></span></a>
+  <a class="action" href="/admin/org"><span class="a-icon">{{ icon('building', 20) }}</span>
+    <span><strong>Organisation units</strong><small>Department groups and departments.</small></span></a>
+  {% endif %}
+  {% if user.is_hr_admin %}
+  <a class="action" href="/admin/roles"><span class="a-icon">{{ icon('shield', 20) }}</span>
+    <span><strong>Roles & access</strong><small>People Partners and Executives per unit; HR roles; auditors.</small></span></a>
   {% endif %}
   {% if user.has('HR_ADMIN', 'AUDITOR') %}
-  <div class="card"><h2>Audit</h2><p><a href="/admin/audit">Audit log</a><br><span class="small muted">Who changed what and when.</span></p></div>
+  <a class="action" href="/admin/audit"><span class="a-icon">{{ icon('log', 20) }}</span>
+    <span><strong>Audit log</strong><small>Who changed what, and when.</small></span></a>
   {% endif %}
 </div>
 {% endblock %}

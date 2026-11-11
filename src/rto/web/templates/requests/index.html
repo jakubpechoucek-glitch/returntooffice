@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% from "macros.html" import status_pill, type_label %}
 {% block title %}Requests{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>Requests</h1><div class="muted">Weekly exemptions, commitment changes and disputes, with their approval status.</div></div>
+  <div><h1><span class="page-icon">{{ icon('inbox', 20) }}</span>Requests</h1><div class="muted">Weekly exemptions, commitment changes and disputes, with their approval status.</div></div>
   <div class="toolbar"><a class="btn primary" href="/requests/new">New request</a></div>
 </div>
 

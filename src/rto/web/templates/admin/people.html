@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}People{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>People and reporting lines</h1>
+  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('person', 20) }}</span>People and reporting lines</h1>
     <div class="muted">Current placement. Open a person to change manager, department, office or commitment (effective-dated).</div></div>
   <form method="get" class="toolbar">
     <div><label>Search</label><input name="q" value="{{ q }}" placeholder="Name, e-mail or number"></div>

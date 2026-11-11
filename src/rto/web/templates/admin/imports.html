@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Imports{% endblock %}
 {% block content %}
-<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Imports</h1>
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('upload', 20) }}</span>Imports</h1>
   <div class="muted">Files are validated completely before anything is stored. Re-importing the same period replaces earlier data. Layouts: see <code>docs/data-import.md</code>.</div></div></div>
 
 {% if last %}

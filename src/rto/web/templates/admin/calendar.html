@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Calendar{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Holidays and excluded periods</h1>
+  <div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('calendar', 20) }}</span>Holidays and excluded periods</h1>
     <div class="muted">Holidays are neither valid nor missing days and never reduce the commitment. Weeks with fewer working days than the threshold are not counted.</div></div>
   <form method="get" class="toolbar"><div><label>Year</label><input type="number" name="year" value="{{ year }}" min="2020" max="2100"></div><button class="btn" type="submit">Show</button></form>
 </div>

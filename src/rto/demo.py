@@ -240,6 +240,10 @@ def seed_demo(db: Session, synthetic_dir: pathlib.Path | None = None) -> dict:
         paolo = db.scalar(select(Employee).where(Employee.email == "paolo.reyes@example.com"))
         if paolo:
             paolo.in_scope = False  # ExCo member: shown in hierarchy, not tracked in this demo
+            db.flush()
+            from rto.services.compute import recompute_range
+
+            recompute_range(db, PERIOD[0], PERIOD[1], {paolo.id})  # drop results computed while in scope
             _grant(db, paolo, Role.EXECUTIVE, risk)
 
     # Workflow examples

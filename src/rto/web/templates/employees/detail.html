@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% from "macros.html" import passed_pill, week_cell, status_pill, type_label %}
 {% block title %}{{ ey.employee.full_name }}{% endblock %}
 {% block content %}
@@ -6,7 +7,7 @@
 <div class="page-head">
   <div>
     <div class="breadcrumb">{% for c in chain|reverse %}{{ c.full_name }} › {% endfor %}</div>
-    <h1>{{ e.full_name }}</h1>
+    <h1><span class="page-icon">{{ icon('person', 20) }}</span>{{ e.full_name }}</h1>
     <div class="muted">{{ e.position or '' }} · #{{ e.employee_number }} · {{ e.email }}
       {% if ey.assignment %}· {{ ey.assignment.org_unit.name if ey.assignment.org_unit else '' }}{% if ey.assignment.location %} · {{ ey.assignment.location.name }}{% endif %}{% endif %}</div>
   </div>

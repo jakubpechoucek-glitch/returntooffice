@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% from "macros.html" import status_pill, type_label %}
 {% block title %}Request #{{ req.id }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
     <div class="breadcrumb"><a href="/requests">Requests</a> ›</div>
-    <h1>{{ type_label(req.type.value) }} #{{ req.id }} {{ status_pill(req.status.value) }}</h1>
+    <h1><span class="page-icon">{{ icon('inbox', 20) }}</span>{{ type_label(req.type.value) }} #{{ req.id }} {{ status_pill(req.status.value) }}</h1>
     <div class="muted">for <a href="/employees/{{ req.employee_id }}">{{ req.employee.full_name }}</a>
       {% if req.submitted_by and req.submitted_by_id != req.employee_id %}· submitted by {{ req.submitted_by.full_name }}{% endif %}
       · {{ req.created_at.strftime('%Y-%m-%d %H:%M') }}{% if req.source == 'IMPORT' %} · imported{% endif %}</div>

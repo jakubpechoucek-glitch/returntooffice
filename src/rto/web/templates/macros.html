@@ -1,7 +1,18 @@
+{% from "icons.html" import icon %}
 {% macro passed_pill(value, label_ok='Met', label_bad='Not met') -%}
   {%- if value is none -%}<span class="pill neutral">No data</span>
-  {%- elif value -%}<span class="pill ok">{{ label_ok }}</span>
-  {%- else -%}<span class="pill bad">{{ label_bad }}</span>{%- endif -%}
+  {%- elif value -%}<span class="pill ok">{{ icon('check', 13) }}{{ label_ok }}</span>
+  {%- else -%}<span class="pill bad">{{ icon('x', 13) }}{{ label_bad }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro adh(value, passed=none) -%}
+  {%- if value is none -%}<span class="adh faint">–</span>
+  {%- else -%}<span class="adh"><progress max="100" value="{{ (value * 100)|round|int }}" class="{{ 'ok' if passed else ('bad' if passed is not none else '') }}"></progress>{{ value|pct }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro page_title(title, ic, eyebrow='') -%}
+  {% if eyebrow %}<div class="eyebrow">{{ eyebrow }}</div>{% endif %}
+  <h1><span class="page-icon">{{ icon(ic, 20) }}</span>{{ title }}</h1>
 {%- endmacro %}
 
 {% macro week_cell(w, adjusted=true) -%}
@@ -27,7 +38,8 @@
 
 {% macro status_pill(status) -%}
   {%- set cls = {'APPROVED': 'ok', 'REJECTED': 'bad', 'PENDING': 'warn', 'WITHDRAWN': 'neutral', 'OPEN': 'neutral', 'PUBLISHED': 'warn', 'FINALIZED': 'ok'} -%}
-  <span class="pill {{ cls.get(status, 'neutral') }}">{{ status|capitalize }}</span>
+  {%- set ic = {'APPROVED': 'check', 'REJECTED': 'x', 'PENDING': 'clock', 'PUBLISHED': 'clock', 'FINALIZED': 'check'} -%}
+  <span class="pill {{ cls.get(status, 'neutral') }}">{% if status in ic %}{{ icon(ic[status], 13) }}{% endif %}{{ status|capitalize }}</span>
 {%- endmacro %}
 
 {% macro csrf_field(csrf) -%}<input type="hidden" name="csrf_token" value="{{ csrf }}">{%- endmacro %}

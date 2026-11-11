@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Roles{% endblock %}
 {% block content %}
-<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1>Roles and access</h1>
+<div class="page-head"><div><div class="breadcrumb"><a href="/admin">Admin</a> ›</div><h1><span class="page-icon">{{ icon('shield', 20) }}</span>Roles and access</h1>
   <div class="muted">Employees and managers need no role: they see themselves and their reporting line automatically.
   Roles can also be granted company-wide through Entra ID app roles.</div></div></div>
 <div class="grid cols-2">

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "icons.html" import icon %}
 {% block title %}Thresholds{% endblock %}
 {% block content %}
 <div class="page-head"><div>
   <div class="breadcrumb"><a href="/admin">Admin</a> ›</div>
-  <h1>Compliance thresholds per department</h1>
+  <h1><span class="page-icon">{{ icon('target', 20) }}</span>Compliance thresholds per department</h1>
   <div class="muted">Each value is inherited from the parent unit unless overridden. Effective values as of {{ today }}.</div>
 </div></div>
 
